@@ -1,5 +1,6 @@
-pub mod token;
-pub mod lexer;
+mod lexer;
+mod tests;
+mod token;
 
 fn main() {
     println!("Hello");
