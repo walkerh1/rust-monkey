@@ -51,20 +51,47 @@ impl<'a> Iterator for TokensIter<'a> {
         self.skip_whitespace();
         let ch = self.iter.next()?;
         match ch {
-            '=' => Some(Token::ASSIGN),
+            '+' => Some(Token::PLUS),
+            '-' => Some(Token::MINUS),
+            '*' => Some(Token::ASTERISK),
+            '/' => Some(Token::SLASH),
+            '<' => Some(Token::LT),
+            '>' => Some(Token::GT),
             ';' => Some(Token::SEMICOLON),
             '(' => Some(Token::LPAREN),
             ')' => Some(Token::RPAREN),
             ',' => Some(Token::COMMA),
-            '+' => Some(Token::PLUS),
             '{' => Some(Token::LBRACE),
             '}' => Some(Token::RBRACE),
+            '=' => {
+                if let Some(c) = self.iter.peek() {
+                    if *c == '=' {
+                        self.iter.next();
+                        return Some(Token::EQ);
+                    }
+                }
+                Some(Token::ASSIGN)
+            },
+            '!' => {
+                if let Some(c) = self.iter.peek() {
+                    if *c == '=' {
+                        self.iter.next();
+                        return Some(Token::NOTEQ);
+                    }
+                }
+                Some(Token::BANG)
+            },
             _ => {
                 if ch.is_ascii_alphabetic() || ch == '_' {
                     let word = self.get_rest_of_word(ch);
                     match word.as_str() {
                         "let" => Some(Token::LET),
                         "fn" => Some(Token::FUNCTION),
+                        "true" => Some(Token::TRUE),
+                        "false" => Some(Token::FALSE),
+                        "if" => Some(Token::IF),
+                        "else" => Some(Token::ELSE),
+                        "return" => Some(Token::RETURN),
                         _ => Some(Token::IDENTIFIER(word)),
                     }
                 } else if ch.is_ascii_digit() {
@@ -92,7 +119,7 @@ impl Lexer for str {
 }
 
 #[test]
-fn test_next_token_one() {
+fn test_lexer_one() {
     let input = "=+(){},;";
     let tests = vec![
         Token::ASSIGN,
@@ -104,12 +131,12 @@ fn test_next_token_one() {
         Token::COMMA,
         Token::SEMICOLON,
     ];
-    let tokens: Vec<Token> = input.tokens().collect();
+    let tokens: Vec<_> = input.tokens().collect();
     assert_eq!(tests, tokens);
 }
 
 #[test]
-fn test_next_token_two() {
+fn test_lexer_two() {
     let input = "let five = 5;
 let ten = 10;
 
@@ -157,6 +184,64 @@ let result = add(five, ten);
         Token::RPAREN,
         Token::SEMICOLON,
     ];
-    let tokens = input.tokens().collect::<Vec<Token>>();
+    let tokens: Vec<_> = input.tokens().collect();
+    assert_eq!(tests, tokens);
+}
+
+#[test]
+fn test_lexer_three() {
+    let input = "!-/*5;
+5 < 10 > 5;
+
+if (5 < 10) {
+    return true;
+} else {
+    return false;
+}
+
+10 == 10;
+10 != 9;
+";
+
+    let tests = vec![
+        Token::BANG,
+        Token::MINUS,
+        Token::SLASH,
+        Token::ASTERISK,
+        Token::INT(5),
+        Token::SEMICOLON,
+        Token::INT(5),
+        Token::LT,
+        Token::INT(10),
+        Token::GT,
+        Token::INT(5),
+        Token::SEMICOLON,
+        Token::IF,
+        Token::LPAREN,
+        Token::INT(5),
+        Token::LT,
+        Token::INT(10),
+        Token::RPAREN,
+        Token::LBRACE,
+        Token::RETURN,
+        Token::TRUE,
+        Token::SEMICOLON,
+        Token::RBRACE,
+        Token::ELSE,
+        Token::LBRACE,
+        Token::RETURN,
+        Token::FALSE,
+        Token::SEMICOLON,
+        Token::RBRACE,
+        Token::INT(10),
+        Token::EQ,
+        Token::INT(10),
+        Token::SEMICOLON,
+        Token::INT(10),
+        Token::NOTEQ,
+        Token::INT(9),
+        Token::SEMICOLON,
+    ];
+    let tokens: Vec<_> = input.tokens().collect();
     assert_eq!(tests, tokens);
 }

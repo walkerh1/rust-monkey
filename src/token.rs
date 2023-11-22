@@ -1,6 +1,6 @@
 #[derive(Debug, PartialEq)]
 pub enum Token {
-    // non-visible tokens
+    // bad tokens
     ILLEGAL,
 
     // identifiers and literals
@@ -10,6 +10,14 @@ pub enum Token {
     // operators
     ASSIGN,
     PLUS,
+    MINUS,
+    BANG,
+    ASTERISK,
+    SLASH,
+    LT,
+    GT,
+    EQ,
+    NOTEQ,
 
     // delimiters
     COMMA,
@@ -22,4 +30,9 @@ pub enum Token {
     // keywords
     FUNCTION,
     LET,
+    TRUE,
+    FALSE,
+    IF,
+    ELSE,
+    RETURN,
 }
