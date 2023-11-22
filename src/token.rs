@@ -1,11 +1,11 @@
 #[derive(Debug, PartialEq)]
-pub enum Token<'a> {
+pub enum Token {
     // non-visible tokens
     ILLEGAL,
 
     // identifiers and literals
-    IDENTIFIER(&'a str),
-    INT(&'a str),
+    IDENTIFIER(String),
+    INT(u64),
 
     // operators
     ASSIGN,
