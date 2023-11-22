@@ -1,6 +1,5 @@
-pub mod token;
-
-enum Token {
+#[derive(Debug, PartialEq)]
+pub enum Token {
     ILLEGAL,
     EOF,
     IDENTIFIER(String),

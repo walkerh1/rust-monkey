@@ -1,3 +1,8 @@
+use lexer::Lexer;
+
+pub mod token;
+pub mod lexer;
+
 fn main() {
-    println!("Hello, world!");
+    let lexer = Lexer::new("123");
 }
