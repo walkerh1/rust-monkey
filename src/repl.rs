@@ -4,7 +4,7 @@ use crate::lexer::Lexer;
 
 pub struct Repl;
 
-const PROMPT: &'static str = ">> ";
+const PROMPT: &str = ">> ";
 
 impl Repl {
     pub fn start() -> io::Result<()> {
@@ -19,12 +19,12 @@ impl Repl {
             let bytes_read = reader.read_line(&mut buffer)?;
 
             if bytes_read == 0 {
-                write!(writer, "\n")?;
+                writeln!(writer)?;
                 break;
             }
 
             buffer.as_str().tokens().for_each(|token| {
-                write!(writer, "{:?}\n", token).expect("Failed to write to stdout")
+                writeln!(writer, "{:?}", token).expect("Failed to write to stdout")
             })
         }
 

@@ -51,57 +51,57 @@ impl<'a> Iterator for TokensIter<'a> {
         self.skip_whitespace();
         let ch = self.iter.next()?;
         match ch {
-            '+' => Some(Token::PLUS),
-            '-' => Some(Token::MINUS),
-            '*' => Some(Token::ASTERISK),
-            '/' => Some(Token::SLASH),
-            '<' => Some(Token::LT),
-            '>' => Some(Token::GT),
-            ';' => Some(Token::SEMICOLON),
-            '(' => Some(Token::LPAREN),
-            ')' => Some(Token::RPAREN),
-            ',' => Some(Token::COMMA),
-            '{' => Some(Token::LBRACE),
-            '}' => Some(Token::RBRACE),
+            '+' => Some(Token::Plus),
+            '-' => Some(Token::Minus),
+            '*' => Some(Token::Asterisk),
+            '/' => Some(Token::Slash),
+            '<' => Some(Token::Lt),
+            '>' => Some(Token::Gt),
+            ';' => Some(Token::Semicolon),
+            '(' => Some(Token::Lparen),
+            ')' => Some(Token::Rparen),
+            ',' => Some(Token::Comma),
+            '{' => Some(Token::Lbrace),
+            '}' => Some(Token::Rbrace),
             '=' => {
                 if let Some(c) = self.iter.peek() {
                     if *c == '=' {
                         self.iter.next();
-                        return Some(Token::EQ);
+                        return Some(Token::Eq);
                     }
                 }
-                Some(Token::ASSIGN)
+                Some(Token::Assign)
             }
             '!' => {
                 if let Some(c) = self.iter.peek() {
                     if *c == '=' {
                         self.iter.next();
-                        return Some(Token::NOTEQ);
+                        return Some(Token::Noteq);
                     }
                 }
-                Some(Token::BANG)
+                Some(Token::Bang)
             }
             _ => {
                 if ch.is_ascii_alphabetic() || ch == '_' {
                     let word = self.get_rest_of_word(ch);
                     match word.as_str() {
-                        "let" => Some(Token::LET),
-                        "fn" => Some(Token::FUNCTION),
-                        "true" => Some(Token::TRUE),
-                        "false" => Some(Token::FALSE),
-                        "if" => Some(Token::IF),
-                        "else" => Some(Token::ELSE),
-                        "return" => Some(Token::RETURN),
-                        _ => Some(Token::IDENTIFIER(word)),
+                        "let" => Some(Token::Let),
+                        "fn" => Some(Token::Function),
+                        "true" => Some(Token::True),
+                        "false" => Some(Token::False),
+                        "if" => Some(Token::If),
+                        "else" => Some(Token::Else),
+                        "return" => Some(Token::Return),
+                        _ => Some(Token::Identifier(word)),
                     }
                 } else if ch.is_ascii_digit() {
                     let num = self.get_rest_of_number(ch);
                     if let Ok(val) = num {
-                        return Some(Token::INT(val));
+                        return Some(Token::Int(val));
                     }
-                    Some(Token::ILLEGAL)
+                    Some(Token::Illegal)
                 } else {
-                    Some(Token::ILLEGAL)
+                    Some(Token::Illegal)
                 }
             }
         }
