@@ -1,4 +1,4 @@
-use std::{str::Chars, iter::Peekable};
+use std::{str::Chars, iter::Peekable, num::ParseIntError};
 
 use crate::token::Token;
 
@@ -30,7 +30,7 @@ impl<'a> TokensIter<'a> {
         word
     }
 
-    fn get_rest_of_number(&mut self, ch: char) -> u64 {
+    fn get_rest_of_number(&mut self, ch: char) -> Result<u64, ParseIntError> {
         let mut num = String::from(ch);
         while let Some(c) = self.iter.peek() {
             if c.is_ascii_digit() {
@@ -40,8 +40,7 @@ impl<'a> TokensIter<'a> {
                 break;
             }
         }
-        // TODO: this is unsafe, e.g. if num == "00102"
-        num.parse::<u64>().unwrap()
+        num.parse::<u64>()
     }
 }
 
@@ -70,7 +69,10 @@ impl<'a> Iterator for TokensIter<'a> {
                     }
                 } else if ch.is_ascii_digit() {
                     let num = self.get_rest_of_number(ch);
-                    Some(Token::INT(num))
+                    match num {
+                        Ok(val) => Some(Token::INT(val)),
+                        _ => Some(Token::ILLEGAL) // badly formatted number
+                    }
                 } else {
                     Some(Token::ILLEGAL)
                 }
@@ -79,11 +81,11 @@ impl<'a> Iterator for TokensIter<'a> {
     }
 }
 
-trait Lex {
+trait Lexer {
     fn tokens(&self) -> TokensIter;
 }
 
-impl Lex for str {
+impl Lexer for str {
     fn tokens(&self) -> TokensIter {
         TokensIter { iter: self.chars().peekable() }
     }
