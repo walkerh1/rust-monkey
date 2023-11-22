@@ -1,52 +1,36 @@
+use std::str::Chars;
+
 use crate::token::Token;
 
-pub struct Lexer<'a> {
-    input: &'a str,
-    position: usize,
-    read_position: usize,
-    ch: Option<char>,
+pub struct Tokens<'a> {
+    iter: Chars<'a>
 }
 
-impl Lexer<'_> {
-    pub fn new(input: &str) -> Lexer {
-        let mut lexer = Lexer {
-            input,
-            position: 0,
-            read_position: 0,
-            ch: None
-        };
-        lexer.read_char();
-        lexer
-    }
+impl<'a> Iterator for Tokens<'a> {
+    type Item = Token<'a>;
 
-    pub fn next_token(&mut self) -> Token {
-        let token = if let Some(token) = self.ch {
-            match token {
-                '=' => Token::ASSIGN,
-                ';' => Token::SEMICOLON,
-                '(' => Token::LPAREN,
-                ')' => Token::RPAREN,
-                ',' => Token::COMMA,
-                '+' => Token::PLUS,
-                '{' => Token::LBRACE,
-                '}' => Token::RBRACE,
-                _ => Token::ILLEGAL,
-            }
-        } else {
-            Token::EOF
-        };
-        self.read_char();
-        token
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.iter.next()? {
+            '=' => Some(Token::ASSIGN),
+            ';' => Some(Token::SEMICOLON),
+            '(' => Some(Token::LPAREN),
+            ')' => Some(Token::RPAREN),
+            ',' => Some(Token::COMMA),
+            '+' => Some(Token::PLUS),
+            '{' => Some(Token::LBRACE),
+            '}' => Some(Token::RBRACE),
+            _ => Some(Token::ILLEGAL)
+        }
     }
+}
 
-    fn read_char(&mut self) {
-        self.ch = if self.read_position < self.input.len() {
-            self.input.chars().nth(self.read_position)
-        } else {
-            None
-        };
-        self.position = self.read_position;
-        self.read_position += 1;
+trait Lex {
+    fn tokens(&self) -> Tokens;
+}
+
+impl Lex for str {
+    fn tokens(&self) -> Tokens {
+        Tokens { iter: self.chars() }
     }
 }
 
@@ -62,10 +46,9 @@ fn test_next_token_one() {
         Token::RBRACE,
         Token::COMMA,
         Token::SEMICOLON,
-        Token::EOF,
     ];
-    let mut lexer = Lexer::new(input);
-    tests.iter().for_each(|token| assert_eq!(*token, lexer.next_token()));
+    let tokens: Vec<Token> = input.tokens().collect();
+    assert_eq!(tests, tokens);
 }
 
 #[test]
@@ -117,8 +100,7 @@ let result = add(five, ten);
         Token::IDENTIFIER("ten"),
         Token::RPAREN,
         Token::SEMICOLON,
-        Token::EOF,
     ];
-    let mut lexer = Lexer::new(input);
-    tests.iter().for_each(|token| assert_eq!(*token, lexer.next_token()));
+    let tokens = input.tokens().collect::<Vec<Token>>();
+    assert_eq!(tests, tokens);
 }
