@@ -1,9 +1,9 @@
 #[derive(Debug, PartialEq)]
-pub enum Token {
+pub enum Token<'a> {
     ILLEGAL,
     EOF,
-    IDENTIFIER(String),
-    INT(String),
+    IDENTIFIER(&'a str),
+    INT(&'a str),
     ASSIGN,
     PLUS,
     COMMA,
