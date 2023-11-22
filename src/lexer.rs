@@ -96,10 +96,10 @@ impl<'a> Iterator for TokensIter<'a> {
                     }
                 } else if ch.is_ascii_digit() {
                     let num = self.get_rest_of_number(ch);
-                    match num {
-                        Ok(val) => Some(Token::INT(val)),
-                        _ => Some(Token::ILLEGAL), // badly formatted number
+                    if let Ok(val) = num {
+                        return Some(Token::INT(val));
                     }
+                    Some(Token::ILLEGAL)
                 } else {
                     Some(Token::ILLEGAL)
                 }
