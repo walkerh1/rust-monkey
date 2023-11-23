@@ -1,11 +1,9 @@
 use std::io;
 
-use repl::Repl;
+use crate::repl::Repl;
 
-mod lexer;
+pub mod lexer;
 pub mod repl;
-mod tests;
-mod token;
 
 fn main() -> io::Result<()> {
     Repl::start()

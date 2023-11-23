@@ -1,6 +1,9 @@
 use std::{iter::Peekable, num::ParseIntError, str::Chars};
 
-use crate::token::Token;
+use token::Token;
+
+mod tests;
+mod token;
 
 pub struct TokensIter<'a> {
     iter: Peekable<Chars<'a>>,

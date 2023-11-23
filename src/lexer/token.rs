@@ -1,8 +1,5 @@
 #[derive(Debug, PartialEq)]
 pub enum Token {
-    // bad tokens
-    Illegal,
-
     // identifiers and literals
     Identifier(String),
     Int(u64),
@@ -35,4 +32,7 @@ pub enum Token {
     If,
     Else,
     Return,
+
+    // bad token
+    Illegal,
 }
