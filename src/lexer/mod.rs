@@ -33,7 +33,7 @@ impl<'a> TokensIter<'a> {
         word
     }
 
-    fn get_rest_of_number(&mut self, ch: char) -> Result<u64, ParseIntError> {
+    fn get_rest_of_number(&mut self, ch: char) -> Result<i64, ParseIntError> {
         let mut num = String::from(ch);
         while let Some(c) = self.iter.peek() {
             if c.is_ascii_digit() {
@@ -43,7 +43,7 @@ impl<'a> TokensIter<'a> {
                 break;
             }
         }
-        num.parse::<u64>()
+        num.parse::<i64>()
     }
 }
 
