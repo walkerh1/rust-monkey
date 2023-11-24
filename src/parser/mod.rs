@@ -9,8 +9,6 @@ pub struct NodesIter<'a> {
     iter: Peekable<TokensIter<'a>>,
 }
 
-impl<'a> NodesIter<'a> {}
-
 impl<'a> Iterator for NodesIter<'a> {
     type Item = Statement;
 
@@ -23,7 +21,7 @@ pub trait Parser {
     fn ast_nodes(&self) -> NodesIter;
 }
 
-impl<'a, T: Lexer> Parser for T {
+impl<L: Lexer> Parser for L {
     fn ast_nodes(&self) -> NodesIter {
         NodesIter {
             iter: self.tokens().peekable(),
