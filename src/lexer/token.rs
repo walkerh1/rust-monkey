@@ -46,8 +46,8 @@ impl Display for Token {
             f,
             "{}",
             match self {
-                Token::Identifier(id) => format!("{}", id),
-                Token::Int(val) => format!("{}", val),
+                Token::Identifier(id) => id.to_string(),
+                Token::Int(val) => val.to_string(),
                 Token::Assign => String::from("="),
                 Token::Plus => String::from("+"),
                 Token::Minus => String::from("-"),

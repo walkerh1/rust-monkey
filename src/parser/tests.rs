@@ -107,9 +107,12 @@ return 10;
 
 #[test]
 fn test_identifier_expression_statement_with_semicolon() {
-    let input = "foo;";
+    let input = "foo;
+return 10;
+";
     let expected: Vec<_> = vec![
         Statement::Expression(Expression::Identifier(String::from("foo"))),
+        Statement::Return(Expression::Integer(10)),
     ];
     let (ast_nodes, errors) = collect_parsing_results(input);
     assert_eq!(ast_nodes, expected);

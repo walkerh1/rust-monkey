@@ -15,9 +15,9 @@ impl Display for Statement {
             f,
             "{}",
             match self {
-                Statement::Let(exp1,exp2)=>format!("let {} = {};", exp1, exp2),
-                Statement::Return(exp)=>format!("return {};", exp),
-                Statement::Expression(exp) => format!("{}", exp),
+                Statement::Let(exp1, exp2) => format!("let {} = {};", exp1, exp2),
+                Statement::Return(exp) => format!("return {};", exp),
+                Statement::Expression(exp) => exp.to_string(),
             }
         )
     }
@@ -35,8 +35,8 @@ impl Display for Expression {
             f,
             "{}",
             match self {
-                Expression::Identifier(id) => format!("{}", id),
-                Expression::Integer(int) => format!("{}", int),
+                Expression::Identifier(id) => id.to_string(),
+                Expression::Integer(val) => val.to_string(),
             }
         )
     }
@@ -47,9 +47,9 @@ pub struct ParsingError(pub String);
 
 impl ParsingError {
     pub fn new(expected: &Token, received: &Token) -> ParsingError {
-        ParsingError(String::from(format!(
+        ParsingError(format!(
             "Expected next token to be '{}', got '{}' instead",
             expected, received
-        )))
+        ))
     }
 }

@@ -6,7 +6,7 @@ use crate::lexer::{token::Token, Lexer, LexerIter};
 mod ast;
 mod tests;
 
-type PrefixParseFn = fn(&mut ParserIter, &Token) -> Result<Expression, ParsingError>;
+type PrefixParseFn = fn(&Token) -> Result<Expression, ParsingError>;
 type InfixParseFn = fn(&mut ParserIter) -> Result<Expression, ParsingError>;
 
 enum Precedence {
@@ -31,16 +31,14 @@ impl<'a> ParserIter<'a> {
             Some(Token::Identifier(val)) => val,
             Some(token) => {
                 return Err(ParsingError::new(&expected, &token));
-            },
+            }
             None => {
                 return Err(ParsingError::new(&expected, &Token::Eof));
-            },
+            }
         };
-        
+
         // next token after identifier should be '='
-        if let Err(e) = self.next_token_expecting(&Token::Assign) {
-            return Err(e);
-        }
+        self.next_token_expecting(&Token::Assign)?;
 
         // assume for now that there will always be a number after '='
         let int_token = self
@@ -54,9 +52,9 @@ impl<'a> ParserIter<'a> {
 
         // next token after single expression on RHS of '=' should be ';'
         match self.iter.peek() {
-            Some(Token::Semicolon) => {},
+            Some(Token::Semicolon) => {}
             Some(token) => return Err(ParsingError::new(&Token::Semicolon, token)),
-            None => return Err(ParsingError::new(&Token::Semicolon, &Token::Eof))
+            None => return Err(ParsingError::new(&Token::Semicolon, &Token::Eof)),
         }
 
         Ok(Statement::Let(
@@ -76,7 +74,7 @@ impl<'a> ParserIter<'a> {
     }
 
     fn parse_expression_statement(&mut self, token: &Token) -> Result<Statement, ParsingError> {
-        let expression = match self.parse_expression(&token) {
+        let expression = match self.parse_expression(token) {
             Ok(s) => s,
             Err(e) => return Err(e),
         };
@@ -84,11 +82,11 @@ impl<'a> ParserIter<'a> {
     }
 
     fn parse_expression(&mut self, token: &Token) -> Result<Expression, ParsingError> {
-        let prefix = match ParserIter::get_prefix_parse_fn(&token) {
+        let prefix = match ParserIter::get_prefix_parse_fn(token) {
             Some(func) => func,
             None => todo!(),
         };
-        prefix(self, &token)
+        prefix(token)
     }
 
     fn get_prefix_parse_fn(token: &Token) -> Option<PrefixParseFn> {
@@ -98,18 +96,15 @@ impl<'a> ParserIter<'a> {
         }
     }
 
-    fn parse_identifier(parser: &mut ParserIter, token: &Token) -> Result<Expression, ParsingError> {
+    fn parse_identifier(token: &Token) -> Result<Expression, ParsingError> {
         // already know token is the right type
         match token {
             Token::Identifier(val) => Ok(Expression::Identifier(val.clone())),
-            _ => Err(ParsingError(String::from("Expected IDENT, got token"))),
+            _ => Err(ParsingError(String::from("Impossible to reach this line"))),
         }
     }
 
-    fn next_token_expecting(
-        &mut self,
-        expected: &Token,
-    ) -> Result<Token, ParsingError> {
+    fn next_token_expecting(&mut self, expected: &Token) -> Result<Token, ParsingError> {
         match self.iter.peek() {
             Some(found) => {
                 if found == expected {
