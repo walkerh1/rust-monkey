@@ -70,6 +70,15 @@ let y 3;";
     assert_eq!(ast_nodes.len(), 1);
 }
 
+#[test]
+fn test_return_statement() {
+    let input = "return 10;";
+    let expected: Vec<_> = vec![Statement::Return(Expression::Integer(10))];
+    let (ast_nodes, errors) = collect_parsing_results(input);
+    assert_eq!(errors.len(), 0);
+    assert_eq!(ast_nodes, expected);
+}
+
 fn collect_parsing_results(input: &str) -> (Vec<Statement>, Vec<ParsingError>) {
     let mut errors = vec![];
     let ast_nodes: Vec<_> = input

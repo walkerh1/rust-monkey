@@ -35,8 +35,6 @@ impl<'a> NodesIter<'a> {
             _ => -1,
         };
 
-        // for now just iterate till a semicolon is reached
-
         Some(Ok(Statement::Let(
             Expression::Identifier(id),
             Expression::Integer(val),
@@ -44,7 +42,12 @@ impl<'a> NodesIter<'a> {
     }
 
     fn parse_return(&mut self) -> Option<Result<Statement>> {
-        todo!()
+        let exp = self.iter.next().expect("for now expect int");
+        let val = match exp {
+            Token::Int(int) => int,
+            _ => -1,
+        };
+        Some(Ok(Statement::Return(Expression::Integer(val))))
     }
 
     fn next_token_expecting(
