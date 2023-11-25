@@ -1,4 +1,4 @@
-use std::{iter::Peekable, num::ParseIntError, str::Chars};
+use std::{iter::Peekable, str::Chars};
 
 use token::Token;
 
@@ -33,7 +33,7 @@ impl<'a> LexerIter<'a> {
         word
     }
 
-    fn get_rest_of_number(&mut self, ch: char) -> Result<i64, ParseIntError> {
+    fn get_rest_of_number(&mut self, ch: char) -> String {
         let mut num = String::from(ch);
         while let Some(c) = self.iter.peek() {
             if c.is_ascii_digit() {
@@ -43,7 +43,7 @@ impl<'a> LexerIter<'a> {
                 break;
             }
         }
-        num.parse::<i64>()
+        num
     }
 }
 
@@ -98,11 +98,7 @@ impl<'a> Iterator for LexerIter<'a> {
                         _ => Some(Token::Identifier(word)),
                     }
                 } else if ch.is_ascii_digit() {
-                    let num = self.get_rest_of_number(ch);
-                    if let Ok(val) = num {
-                        return Some(Token::Int(val));
-                    }
-                    Some(Token::Illegal)
+                    Some(Token::Int(self.get_rest_of_number(ch)))
                 } else {
                     Some(Token::Illegal)
                 }

@@ -51,7 +51,7 @@ fn test_let_parse_error_if_no_assign() {
 }
 
 #[test]
-fn test_statement_parse_error_if_no_semicolon() {
+fn test_let_statement_parse_error_if_no_semicolon() {
     let input = "let x = 5";
     let expected_errors = vec![ParsingError(String::from(
         "Expected next token to be ';', got 'EOF' instead",
@@ -89,6 +89,19 @@ fn test_return_statement() {
 }
 
 #[test]
+fn test_return_statement_parse_error_if_no_semicolon() {
+    let input = "return 10
+let x = 5;
+";
+    let expected_errors: Vec<_> = vec![ParsingError(String::from(
+        "Expected next token to be ';', got 'let' instead",
+    ))];
+    let (ast_nodes, errors) = collect_parsing_results(input);
+    assert_eq!(ast_nodes.len(), 0);
+    assert_eq!(errors, expected_errors);
+}
+
+#[test]
 fn test_parses_multiple_statements() {
     let input = "let x = 5;
 return 10;
@@ -106,7 +119,7 @@ return 10;
 }
 
 #[test]
-fn test_identifier_expression_statement_with_semicolon() {
+fn test_identifier_expression_statement() {
     let input = "foo;
 return 10;
 ";
@@ -120,7 +133,7 @@ return 10;
 }
 
 #[test]
-fn test_identifier_expression_statement_without_semicolon() {
+fn test_expression_statement_parses_without_semicolon() {
     let input = "return 10;
 foo
 ";
@@ -128,6 +141,15 @@ foo
         Statement::Return(Expression::Integer(10)),
         Statement::Expression(Expression::Identifier(String::from("foo"))),
     ];
+    let (ast_nodes, errors) = collect_parsing_results(input);
+    assert_eq!(ast_nodes, expected);
+    assert_eq!(errors.len(), 0);
+}
+
+#[test]
+fn test_integer_expression_statement() {
+    let input = "5;";
+    let expected: Vec<_> = vec![Statement::Expression(Expression::Integer(5))];
     let (ast_nodes, errors) = collect_parsing_results(input);
     assert_eq!(ast_nodes, expected);
     assert_eq!(errors.len(), 0);

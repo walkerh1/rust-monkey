@@ -4,7 +4,7 @@ use std::fmt::Display;
 pub enum Token {
     // identifiers and literals
     Identifier(String),
-    Int(i64),
+    Int(String),
 
     // operators
     Assign,
