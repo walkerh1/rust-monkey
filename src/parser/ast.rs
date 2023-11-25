@@ -6,6 +6,7 @@ use crate::lexer::token::Token;
 pub enum Statement {
     Let(Expression, Expression),
     Return(Expression),
+    Expression(Expression),
 }
 
 impl Display for Statement {
@@ -14,8 +15,9 @@ impl Display for Statement {
             f,
             "{}",
             match self {
-                Statement::Let(exp1, exp2) => format!("let {} = {};", exp1, exp2),
-                Statement::Return(exp) => format!("return {};", exp),
+                Statement::Let(exp1,exp2)=>format!("let {} = {};", exp1, exp2),
+                Statement::Return(exp)=>format!("return {};", exp),
+                Statement::Expression(exp) => format!("{}", exp),
             }
         )
     }
@@ -51,5 +53,3 @@ impl ParsingError {
         )))
     }
 }
-
-pub type Result<Statement> = std::result::Result<Statement, ParsingError>;

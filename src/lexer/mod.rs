@@ -5,11 +5,11 @@ use token::Token;
 mod tests;
 pub mod token;
 
-pub struct TokensIter<'a> {
+pub struct LexerIter<'a> {
     iter: Peekable<Chars<'a>>,
 }
 
-impl<'a> TokensIter<'a> {
+impl<'a> LexerIter<'a> {
     fn skip_whitespace(&mut self) {
         while let Some(c) = self.iter.peek() {
             if c.is_ascii_whitespace() {
@@ -47,7 +47,7 @@ impl<'a> TokensIter<'a> {
     }
 }
 
-impl<'a> Iterator for TokensIter<'a> {
+impl<'a> Iterator for LexerIter<'a> {
     type Item = Token;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -112,12 +112,12 @@ impl<'a> Iterator for TokensIter<'a> {
 }
 
 pub trait Lexer {
-    fn tokens(&self) -> TokensIter;
+    fn tokens(&self) -> LexerIter;
 }
 
 impl Lexer for str {
-    fn tokens(&self) -> TokensIter {
-        TokensIter {
+    fn tokens(&self) -> LexerIter {
+        LexerIter {
             iter: self.chars().peekable(),
         }
     }

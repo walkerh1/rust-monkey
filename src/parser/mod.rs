@@ -1,25 +1,42 @@
 use std::iter::Peekable;
 
-use self::ast::{Expression, ParsingError, Result, Statement};
-use crate::lexer::{token::Token, Lexer, TokensIter};
+use self::ast::{Expression, ParsingError, Statement};
+use crate::lexer::{token::Token, Lexer, LexerIter};
 
 mod ast;
 mod tests;
 
-pub struct NodesIter<'a> {
-    iter: Peekable<TokensIter<'a>>,
+type PrefixParseFn = fn(&mut ParserIter, &Token) -> Result<Expression, ParsingError>;
+type InfixParseFn = fn(&mut ParserIter) -> Result<Expression, ParsingError>;
+
+enum Precedence {
+    Lowest,
+    Equals,
+    LessGreater,
+    Sum,
+    Product,
+    Prefix,
+    Call,
 }
 
-impl<'a> NodesIter<'a> {
-    fn parse_let(&mut self) -> Option<Result<Statement>> {
-        // next token after 'let' should be an identifier
-        let id = match self.get_identifier() {
-            Ok(val) => val,
-            Err(e) => {
-                return Some(Err(e));
-            }
-        };
+pub struct ParserIter<'a> {
+    iter: Peekable<LexerIter<'a>>,
+}
 
+impl<'a> ParserIter<'a> {
+    fn parse_let(&mut self) -> Option<Result<Statement, ParsingError>> {
+        // next token after 'let' should be an identifier
+        let expected = Token::Identifier(String::from("IDENT"));
+        let id = match self.iter.next() {
+            Some(Token::Identifier(val)) => val,
+            Some(token) => {
+                return Some(Err(ParsingError::new(&expected, &token)));
+            },
+            None => {
+                return Some(Err(ParsingError::new(&expected, &Token::Eof)));
+            },
+        };
+        
         // next token after identifier should be '='
         if let Err(e) = self.next_token_expecting(&Token::Assign) {
             return Some(Err(e));
@@ -35,14 +52,22 @@ impl<'a> NodesIter<'a> {
             _ => -1,
         };
 
+        // next token after single expression on RHS of '=' should be ';'
+        match self.iter.peek() {
+            Some(Token::Semicolon) => {},
+            Some(token) => return Some(Err(ParsingError::new(&Token::Semicolon, token))),
+            None => return Some(Err(ParsingError::new(&Token::Semicolon, &Token::Eof)))
+        }
+
         Some(Ok(Statement::Let(
             Expression::Identifier(id),
             Expression::Integer(val),
         )))
     }
 
-    fn parse_return(&mut self) -> Option<Result<Statement>> {
+    fn parse_return(&mut self) -> Option<Result<Statement, ParsingError>> {
         let exp = self.iter.next().expect("for now expect int");
+        // this will change when we start to parse expressions
         let val = match exp {
             Token::Int(int) => int,
             _ => -1,
@@ -50,13 +75,44 @@ impl<'a> NodesIter<'a> {
         Some(Ok(Statement::Return(Expression::Integer(val))))
     }
 
+    fn parse_expression_statement(&mut self, token: &Token) -> Option<Result<Statement, ParsingError>> {
+        let expression = match self.parse_expression(&token) {
+            Ok(s) => s,
+            Err(e) => return Some(Err(e)),
+        };
+        Some(Ok(Statement::Expression(expression)))
+    }
+
+    fn parse_expression(&mut self, token: &Token) -> Result<Expression, ParsingError> {
+        let prefix = match ParserIter::get_prefix_parse_fn(&token) {
+            Some(func) => func,
+            None => { println!("here"); todo!() },
+        };
+        prefix(self, &token)
+    }
+
+    fn get_prefix_parse_fn(token: &Token) -> Option<PrefixParseFn> {
+        match token {
+            Token::Identifier(_) => Some(Self::parse_identifier),
+            _ => None,
+        }
+    }
+
+    fn parse_identifier(parser: &mut ParserIter, token: &Token) -> Result<Expression, ParsingError> {
+        // already know token is the right type
+        match token {
+            Token::Identifier(val) => Ok(Expression::Identifier(val.clone())),
+            _ => Err(ParsingError(String::from("Expected IDENT, got token"))),
+        }
+    }
+
     fn next_token_expecting(
         &mut self,
         expected: &Token,
-    ) -> std::result::Result<Token, ParsingError> {
+    ) -> Result<Token, ParsingError> {
         match self.iter.peek() {
             Some(found) => {
-                if *found == *expected {
+                if found == expected {
                     // unwrap safe here since already peeked
                     Ok(self.iter.next().unwrap())
                 } else {
@@ -67,20 +123,8 @@ impl<'a> NodesIter<'a> {
         }
     }
 
-    fn get_identifier(&mut self) -> std::result::Result<String, ParsingError> {
-        let expected = Token::Identifier(String::from("IDENT"));
-        match self.iter.next() {
-            Some(token) => match token {
-                Token::Identifier(val) => Ok(val),
-                _ => return Err(ParsingError::new(&expected, &token)),
-            },
-            None => return Err(ParsingError::new(&expected, &Token::Eof)),
-        }
-    }
-
     fn skip_to_semicolon(&mut self) {
         while let Some(token) = self.iter.peek() {
-            println!("{}", token);
             if *token != Token::Semicolon {
                 self.iter.next();
             } else {
@@ -90,34 +134,36 @@ impl<'a> NodesIter<'a> {
     }
 }
 
-impl<'a> Iterator for NodesIter<'a> {
-    type Item = Result<Statement>;
+impl<'a> Iterator for ParserIter<'a> {
+    type Item = Result<Statement, ParsingError>;
 
     fn next(&mut self) -> Option<Self::Item> {
+        if let Some(token) = self.iter.peek() {
+            if *token == Token::Semicolon {
+                self.iter.next();
+            }
+        }
         let token = self.iter.next()?;
+        println!("next: {token}");
         let result = match token {
             Token::Let => self.parse_let(),
             Token::Return => self.parse_return(),
-            _ => None,
+            _ => {
+                println!("123456");
+                self.parse_expression_statement(&token)},
         };
         self.skip_to_semicolon();
-        // returns semicolon error only if result is not already an error
-        if let Err(e) = self.next_token_expecting(&Token::Semicolon) {
-            if result.as_ref().is_some_and(|s| s.is_ok()) {
-                return Some(Err(e));
-            }
-        }
         result
     }
 }
 
 pub trait Parser {
-    fn ast_nodes(&self) -> NodesIter;
+    fn ast_nodes(&self) -> ParserIter;
 }
 
 impl<L: ?Sized + Lexer> Parser for L {
-    fn ast_nodes(&self) -> NodesIter {
-        NodesIter {
+    fn ast_nodes(&self) -> ParserIter {
+        ParserIter {
             iter: self.tokens().peekable(),
         }
     }

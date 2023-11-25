@@ -7,6 +7,15 @@ use crate::parser::{
 
 use super::ast::ParsingError;
 
+fn collect_parsing_results(input: &str) -> (Vec<Statement>, Vec<ParsingError>) {
+    let mut errors = vec![];
+    let ast_nodes: Vec<_> = input
+        .ast_nodes()
+        .filter_map(|node| node.map_err(|e| errors.push(e)).ok())
+        .collect();
+    (ast_nodes, errors)
+}
+
 #[test]
 fn test_let_statement() {
     let input = "let x = 5;";
@@ -79,11 +88,44 @@ fn test_return_statement() {
     assert_eq!(ast_nodes, expected);
 }
 
-fn collect_parsing_results(input: &str) -> (Vec<Statement>, Vec<ParsingError>) {
-    let mut errors = vec![];
-    let ast_nodes: Vec<_> = input
-        .ast_nodes()
-        .filter_map(|node| node.map_err(|e| errors.push(e)).ok())
-        .collect();
-    (ast_nodes, errors)
+#[test]
+fn test_parses_multiple_statements() {
+    let input = "let x = 5;
+return 10;
+";
+    let expected: Vec<_> = vec![
+        Statement::Let(
+            Expression::Identifier(String::from("x")),
+            Expression::Integer(5),
+        ),
+        Statement::Return(Expression::Integer(10)),
+    ];
+    let (ast_nodes, errors) = collect_parsing_results(input);
+    assert_eq!(errors.len(), 0);
+    assert_eq!(ast_nodes, expected);
+}
+
+#[test]
+fn test_identifier_expression_statement_with_semicolon() {
+    let input = "foo;";
+    let expected: Vec<_> = vec![
+        Statement::Expression(Expression::Identifier(String::from("foo"))),
+    ];
+    let (ast_nodes, errors) = collect_parsing_results(input);
+    assert_eq!(ast_nodes, expected);
+    assert_eq!(errors.len(), 0);
+}
+
+#[test]
+fn test_identifier_expression_statement_without_semicolon() {
+    let input = "return 10;
+foo
+";
+    let expected: Vec<_> = vec![
+        Statement::Return(Expression::Integer(10)),
+        Statement::Expression(Expression::Identifier(String::from("foo"))),
+    ];
+    let (ast_nodes, errors) = collect_parsing_results(input);
+    assert_eq!(ast_nodes, expected);
+    assert_eq!(errors.len(), 0);
 }
