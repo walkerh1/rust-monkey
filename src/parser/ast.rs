@@ -1,4 +1,4 @@
-use std::fmt::{Display, Formatter};
+use std::fmt::{format, Display, Formatter};
 
 use crate::lexer::token::Token;
 
@@ -28,6 +28,7 @@ pub enum Expression {
     Identifier(String),
     Integer(i64),
     Prefix(Prefix, Box<Expression>),
+    Infix(Box<Expression>, Infix, Box<Expression>),
 }
 
 impl Display for Expression {
@@ -39,6 +40,7 @@ impl Display for Expression {
                 Expression::Identifier(id) => id.to_string(),
                 Expression::Integer(val) => val.to_string(),
                 Expression::Prefix(prefix, exp) => format!("{prefix}{exp}"),
+                Expression::Infix(left, infix, right) => format!("{left} {infix} {right}"),
             }
         )
     }
@@ -70,6 +72,37 @@ impl Display for Prefix {
             match self {
                 Prefix::Minus => "-",
                 Prefix::Bang => "!",
+            }
+        )
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub enum Infix {
+    Plus,
+    Minus,
+    Multiply,
+    Divide,
+    GreaterThan,
+    LessThan,
+    Equal,
+    NotEqual,
+}
+
+impl Display for Infix {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Infix::Plus => "+",
+                Infix::Minus => "-",
+                Infix::Multiply => "*",
+                Infix::Divide => "/",
+                Infix::GreaterThan => ">",
+                Infix::LessThan => "<",
+                Infix::Equal => "==",
+                Infix::NotEqual => "!=",
             }
         )
     }

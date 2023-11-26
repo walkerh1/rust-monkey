@@ -5,7 +5,7 @@ use crate::parser::{
     Parser,
 };
 
-use super::ast::ParsingError;
+use super::ast::{Infix, ParsingError};
 
 fn collect_parsing_results(input: &str) -> (Vec<Statement>, Vec<ParsingError>) {
     let mut errors = vec![];
@@ -168,6 +168,7 @@ foo
         Statement::Expression(Expression::Identifier(String::from("foo"))),
     ];
     let (ast_nodes, errors) = collect_parsing_results(input);
+    println!("{errors:?}");
     assert_eq!(ast_nodes, expected);
     assert_eq!(errors.len(), 0);
 }
@@ -229,4 +230,62 @@ fn test_prefix_expressions_error_if_no_right_expression() {
     let (ast_nodes, errors) = collect_parsing_results(input);
     assert_eq!(errors, expected_errors);
     assert_eq!(ast_nodes.len(), 0);
+}
+
+#[test]
+fn test_infix_expressions() {
+    let input = "5 + 5;
+5 - 5;
+5 * 5;
+5 / 5;
+5 > 5;
+5 < 5;
+5 == 5;
+5 != 5;
+";
+    let expected = vec![
+        Statement::Expression(Expression::Infix(
+            Box::new(Expression::Integer(5)),
+            Infix::Plus,
+            Box::new(Expression::Integer(5)),
+        )),
+        Statement::Expression(Expression::Infix(
+            Box::new(Expression::Integer(5)),
+            Infix::Minus,
+            Box::new(Expression::Integer(5)),
+        )),
+        Statement::Expression(Expression::Infix(
+            Box::new(Expression::Integer(5)),
+            Infix::Multiply,
+            Box::new(Expression::Integer(5)),
+        )),
+        Statement::Expression(Expression::Infix(
+            Box::new(Expression::Integer(5)),
+            Infix::Divide,
+            Box::new(Expression::Integer(5)),
+        )),
+        Statement::Expression(Expression::Infix(
+            Box::new(Expression::Integer(5)),
+            Infix::GreaterThan,
+            Box::new(Expression::Integer(5)),
+        )),
+        Statement::Expression(Expression::Infix(
+            Box::new(Expression::Integer(5)),
+            Infix::LessThan,
+            Box::new(Expression::Integer(5)),
+        )),
+        Statement::Expression(Expression::Infix(
+            Box::new(Expression::Integer(5)),
+            Infix::Equal,
+            Box::new(Expression::Integer(5)),
+        )),
+        Statement::Expression(Expression::Infix(
+            Box::new(Expression::Integer(5)),
+            Infix::NotEqual,
+            Box::new(Expression::Integer(5)),
+        )),
+    ];
+    let (ast_nodes, errors) = collect_parsing_results(input);
+    println!("{errors:?}");
+    assert_eq!(ast_nodes, expected);
 }

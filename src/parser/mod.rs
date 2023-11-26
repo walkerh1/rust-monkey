@@ -1,22 +1,35 @@
 use std::iter::Peekable;
 
-use self::ast::{Expression, ParsingError, Prefix, Statement};
+use self::ast::{Expression, Infix, ParsingError, Prefix, Statement};
 use crate::lexer::{token::Token, Lexer, LexerIter};
 
 mod ast;
 mod tests;
 
 type PrefixParseFn = fn(&mut ParserIter, &Token) -> Result<Expression, ParsingError>;
-type InfixParseFn = fn(&mut ParserIter, &Token) -> Result<Expression, ParsingError>;
+type InfixParseFn = fn(&mut ParserIter, Expression, &Token) -> Result<Expression, ParsingError>;
 
+#[derive(PartialEq, Eq, PartialOrd, Ord)]
 enum Precedence {
-    Lowest,
+    Lowest = 0,
     Equals,
     LessGreater,
     Sum,
     Product,
     Prefix,
     Call,
+}
+
+impl Precedence {
+    fn get_precedence(token: &Token) -> Precedence {
+        match token {
+            Token::Eq | Token::Noteq => Precedence::Equals,
+            Token::Lt | Token::Gt => Precedence::LessGreater,
+            Token::Plus | Token::Minus => Precedence::Sum,
+            Token::Asterisk | Token::Slash => Precedence::Product,
+            _ => Precedence::Lowest,
+        }
+    }
 }
 
 pub struct ParserIter<'a> {
@@ -136,7 +149,7 @@ impl<'a> ParserIter<'a> {
         token: &Token,
         precedence: Precedence,
     ) -> Result<Expression, ParsingError> {
-        let prefix = match ParserIter::get_prefix_parse_fn(token) {
+        let prefix_fn = match ParserIter::get_prefix_parse_fn(token) {
             Some(func) => func,
             None => {
                 return Err(ParsingError(format!(
@@ -144,7 +157,40 @@ impl<'a> ParserIter<'a> {
                 )))
             }
         };
-        prefix(self, token)
+
+        let mut left_expression = prefix_fn(self, token)?;
+
+        loop {
+            let infix_fn = if let Some(right) = self.iter.peek() {
+                // if *right == Token::Semicolon {
+                //     break;
+                // }
+                if precedence < Precedence::get_precedence(right) {
+                    match ParserIter::get_infix_parse_fn(right) {
+                        Some(func) => func,
+                        None => break,
+                    }
+                } else {
+                    break;
+                }
+            } else {
+                break;
+            };
+
+            let next_token = match self.next_token_or_end() {
+                Some(Token::Semicolon) => {
+                    return Err(ParsingError(String::from("found semicolon")))
+                }
+                Some(t) => t,
+                None => return Err(ParsingError(String::from("found EOF"))),
+            };
+
+            left_expression = infix_fn(self, left_expression, &next_token)?;
+        }
+
+        println!("{left_expression:?}");
+
+        Ok(left_expression)
     }
 
     fn get_prefix_parse_fn(token: &Token) -> Option<PrefixParseFn> {
@@ -152,6 +198,20 @@ impl<'a> ParserIter<'a> {
             Token::Identifier(_) => Some(ParserIter::parse_identifier),
             Token::Int(_) => Some(ParserIter::parse_integer),
             Token::Bang | Token::Minus => Some(ParserIter::parse_prefix_expression),
+            _ => None,
+        }
+    }
+
+    fn get_infix_parse_fn(token: &Token) -> Option<InfixParseFn> {
+        match token {
+            Token::Plus
+            | Token::Minus
+            | Token::Asterisk
+            | Token::Slash
+            | Token::Lt
+            | Token::Gt
+            | Token::Eq
+            | Token::Noteq => Some(ParserIter::parse_infix_expression),
             _ => None,
         }
     }
@@ -208,6 +268,37 @@ impl<'a> ParserIter<'a> {
         };
 
         Ok(Expression::Prefix(prefix, Box::new(right_expression)))
+    }
+
+    fn parse_infix_expression(
+        parser: &mut ParserIter,
+        left_expression: Expression,
+        token: &Token,
+    ) -> Result<Expression, ParsingError> {
+        let infix = match token {
+            Token::Plus => Infix::Plus,
+            Token::Minus => Infix::Minus,
+            Token::Asterisk => Infix::Multiply,
+            Token::Slash => Infix::Divide,
+            Token::Lt => Infix::LessThan,
+            Token::Gt => Infix::GreaterThan,
+            Token::Eq => Infix::Equal,
+            Token::Noteq => Infix::NotEqual,
+            _ => todo!(),
+        };
+
+        let precedence = Precedence::get_precedence(token);
+
+        let right_expression = match parser.next_token_or_end() {
+            Some(token) => parser.parse_expression(&token, precedence)?,
+            None => todo!(),
+        };
+
+        Ok(Expression::Infix(
+            Box::new(left_expression),
+            infix,
+            Box::new(right_expression),
+        ))
     }
 }
 
