@@ -27,6 +27,7 @@ impl Display for Statement {
 pub enum Expression {
     Identifier(String),
     Integer(i64),
+    Prefix(Prefix, Box<Expression>),
 }
 
 impl Display for Expression {
@@ -37,6 +38,7 @@ impl Display for Expression {
             match self {
                 Expression::Identifier(id) => id.to_string(),
                 Expression::Integer(val) => val.to_string(),
+                Expression::Prefix(prefix, exp) => format!("{prefix}{exp}"),
             }
         )
     }
@@ -51,5 +53,24 @@ impl ParsingError {
             "Expected next token to be '{}', got '{}' instead",
             expected, received
         ))
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub enum Prefix {
+    Minus,
+    Bang,
+}
+
+impl Display for Prefix {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Prefix::Minus => "-",
+                Prefix::Bang => "!",
+            }
+        )
     }
 }

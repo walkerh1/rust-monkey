@@ -27,53 +27,39 @@ impl<'a> ParserIter<'a> {
     fn parse_let(&mut self) -> Result<Statement, ParsingError> {
         // after 'let' next token should be an identifier
         let expected = Token::Identifier(String::from("IDENT"));
-        let id = match self.iter.next() {
-            Some(Token::Identifier(val)) => val,
-            Some(token) => return Err(ParsingError::new(&expected, &token)),
+        let identifier = Expression::Identifier(match self.next_token_or_end() {
+            Some(Token::Identifier(id)) => id,
+            Some(received) => return Err(ParsingError::new(&expected, &received)),
             None => return Err(ParsingError::new(&expected, &Token::Eof)),
-        };
+        });
 
         // after identifier next token should be '='
-        self.next_token_expecting(&Token::Assign)?;
+        match self.next_token_or_end() {
+            Some(Token::Assign) => {}
+            Some(token) => return Err(ParsingError::new(&Token::Assign, &token)),
+            None => return Err(ParsingError::new(&Token::Assign, &Token::Eof)),
+        }
 
-        // assume for now that there will always be a number after '='
-        let int_token = self
-            .iter
-            .next()
-            .expect("for now expect int, later this will be an expression");
-        let val = match int_token {
-            Token::Int(int) => int
-                .parse::<i64>()
-                .map_err(|e| ParsingError(format!("Expected an INT, got {}", e))),
-            _ => Ok(-1),
+        // after '=' next token should be the start of an expression, which
+        // means it should not be ';' or EOF
+        let token = match self.next_token_or_end() {
+            Some(Token::Semicolon) => {
+                return Err(ParsingError(format!(
+                    "Expected expression, got ';' instead"
+                )))
+            }
+            Some(t) => t,
+            None => {
+                return Err(ParsingError(format!(
+                    "Expected expression, got 'EOF' instead"
+                )))
+            }
         };
 
-        // after expression on RHS of '=' next token should be ';'
-        match self.iter.peek() {
-            Some(Token::Semicolon) => {}
-            Some(token) => return Err(ParsingError::new(&Token::Semicolon, token)),
-            None => return Err(ParsingError::new(&Token::Semicolon, &Token::Eof)),
-        }
-
-        Ok(Statement::Let(
-            Expression::Identifier(id),
-            Expression::Integer(match val {
-                Ok(v) => v,
-                Err(e) => return Err(e),
-            }),
-        ))
-    }
-
-    fn parse_return(&mut self) -> Result<Statement, ParsingError> {
-        let exp = self.iter.next().expect("for now expect int");
-        // this will change when we start to parse expressions
-        let val = match exp {
-            Token::Int(int) => int
-                .parse::<i64>()
-                .map_err(|_| ParsingError(format!("Expected an INT, got {}", int))),
-            _ => Ok(-1),
-        }
-        .map(|v| Statement::Return(Expression::Integer(v)));
+        let expression = match self.parse_expression(&token) {
+            Ok(exp) => exp,
+            Err(e) => return Err(e),
+        };
 
         // after expression next token should be ';'
         match self.iter.peek() {
@@ -82,7 +68,39 @@ impl<'a> ParserIter<'a> {
             None => return Err(ParsingError::new(&Token::Semicolon, &Token::Eof)),
         }
 
-        val
+        Ok(Statement::Let(identifier, expression))
+    }
+
+    fn parse_return(&mut self) -> Result<Statement, ParsingError> {
+        // after 'let' next token should be beginning of expression, which
+        // means it should not be ';' or EOF
+        let token = match self.next_token_or_end() {
+            Some(Token::Semicolon) => {
+                return Err(ParsingError(format!(
+                    "Expected expression, got ';' instead"
+                )))
+            }
+            Some(t) => t,
+            None => {
+                return Err(ParsingError(format!(
+                    "Expected expression, got 'EOF' instead"
+                )))
+            }
+        };
+
+        let expression = match self.parse_expression(&token) {
+            Ok(exp) => exp,
+            Err(e) => return Err(e),
+        };
+
+        // after expression next token should be ';'
+        match self.iter.peek() {
+            Some(Token::Semicolon) => {}
+            Some(token) => return Err(ParsingError::new(&Token::Semicolon, token)),
+            None => return Err(ParsingError::new(&Token::Semicolon, &Token::Eof)),
+        };
+
+        Ok(Statement::Return(expression))
     }
 
     fn parse_expression_statement(&mut self, token: &Token) -> Result<Statement, ParsingError> {
@@ -96,7 +114,11 @@ impl<'a> ParserIter<'a> {
     fn parse_expression(&mut self, token: &Token) -> Result<Expression, ParsingError> {
         let prefix = match ParserIter::get_prefix_parse_fn(token) {
             Some(func) => func,
-            None => todo!(),
+            None => {
+                return Err(ParsingError(format!(
+                    "Cannot parse {token} as a prefix operator"
+                )))
+            }
         };
         prefix(token)
     }
@@ -131,17 +153,12 @@ impl<'a> ParserIter<'a> {
         }
     }
 
-    fn next_token_expecting(&mut self, expected: &Token) -> Result<Token, ParsingError> {
+    // only advances iterator when next token is not ';' and not EOF
+    fn next_token_or_end(&mut self) -> Option<Token> {
         match self.iter.peek() {
-            Some(found) => {
-                if found == expected {
-                    // unwrap safe here since already peeked
-                    Ok(self.iter.next().unwrap())
-                } else {
-                    Err(ParsingError::new(expected, found))
-                }
-            }
-            None => Err(ParsingError::new(expected, &Token::Eof)),
+            Some(Token::Semicolon) => Some(Token::Semicolon),
+            Some(_) => Some(self.iter.next().unwrap()),
+            None => None,
         }
     }
 
@@ -162,7 +179,7 @@ impl<'a> Iterator for ParserIter<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(token) = self.iter.peek() {
             if *token == Token::Semicolon {
-                self.iter.next()?;
+                self.iter.next();
             }
         }
         let token = self.iter.next()?;
