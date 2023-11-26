@@ -194,12 +194,20 @@ fn test_parsing_bang_prefix_expressions() {
 }
 
 #[test]
-fn test_parsing_minus_prefix_expressions() {
-    let input = "let x = -5;";
-    let expected = vec![Statement::Let(
-        Expression::Identifier(String::from("x")),
-        Expression::Prefix(Prefix::Minus, Box::new(Expression::Integer(5))),
-    )];
+fn test_prefix_expressions() {
+    let input = "let x = -5;
+let y = !10;
+";
+    let expected = vec![
+        Statement::Let(
+            Expression::Identifier(String::from("x")),
+            Expression::Prefix(Prefix::Minus, Box::new(Expression::Integer(5))),
+        ),
+        Statement::Let(
+            Expression::Identifier(String::from("y")),
+            Expression::Prefix(Prefix::Bang, Box::new(Expression::Integer(10))),
+        ),
+    ];
     let (ast_nodes, errors) = collect_parsing_results(input);
     assert_eq!(ast_nodes, expected);
     assert_eq!(errors.len(), 0);
@@ -207,10 +215,16 @@ fn test_parsing_minus_prefix_expressions() {
 
 #[test]
 fn test_prefix_expressions_error_if_no_right_expression() {
-    let input = "!;-";
+    let input = "
+!;
+-";
     let expected_errors = vec![
-        ParsingError(String::from("Expected right expression for '!'")),
-        ParsingError(String::from("Expected right expression for '-'")),
+        ParsingError(String::from(
+            "Expected right expression for '!', got ';' instead",
+        )),
+        ParsingError(String::from(
+            "Expected right expression for '-', got 'EOF' instead",
+        )),
     ];
     let (ast_nodes, errors) = collect_parsing_results(input);
     assert_eq!(errors, expected_errors);

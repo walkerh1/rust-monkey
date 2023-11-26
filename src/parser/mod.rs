@@ -1,13 +1,13 @@
 use std::iter::Peekable;
 
-use self::ast::{Expression, ParsingError, Statement};
+use self::ast::{Expression, ParsingError, Prefix, Statement};
 use crate::lexer::{token::Token, Lexer, LexerIter};
 
 mod ast;
 mod tests;
 
-type PrefixParseFn = fn(&Token) -> Result<Expression, ParsingError>;
-type InfixParseFn = fn(&mut ParserIter) -> Result<Expression, ParsingError>;
+type PrefixParseFn = fn(&mut ParserIter, &Token) -> Result<Expression, ParsingError>;
+type InfixParseFn = fn(&mut ParserIter, &Token) -> Result<Expression, ParsingError>;
 
 enum Precedence {
     Lowest,
@@ -56,7 +56,7 @@ impl<'a> ParserIter<'a> {
             }
         };
 
-        let expression = match self.parse_expression(&token) {
+        let expression = match self.parse_expression(&token, Precedence::Lowest) {
             Ok(exp) => exp,
             Err(e) => return Err(e),
         };
@@ -88,7 +88,7 @@ impl<'a> ParserIter<'a> {
             }
         };
 
-        let expression = match self.parse_expression(&token) {
+        let expression = match self.parse_expression(&token, Precedence::Lowest) {
             Ok(exp) => exp,
             Err(e) => return Err(e),
         };
@@ -104,53 +104,12 @@ impl<'a> ParserIter<'a> {
     }
 
     fn parse_expression_statement(&mut self, token: &Token) -> Result<Statement, ParsingError> {
-        let expression = match self.parse_expression(token) {
+        let expression = match self.parse_expression(token, Precedence::Lowest) {
             Ok(s) => s,
             Err(e) => return Err(e),
         };
+
         Ok(Statement::Expression(expression))
-    }
-
-    fn parse_expression(&mut self, token: &Token) -> Result<Expression, ParsingError> {
-        let prefix = match ParserIter::get_prefix_parse_fn(token) {
-            Some(func) => func,
-            None => {
-                return Err(ParsingError(format!(
-                    "Cannot parse {token} as a prefix operator"
-                )))
-            }
-        };
-        prefix(token)
-    }
-
-    fn get_prefix_parse_fn(token: &Token) -> Option<PrefixParseFn> {
-        match token {
-            Token::Identifier(_) => Some(Self::parse_identifier),
-            Token::Int(_) => Some(Self::parse_integer),
-            _ => None,
-        }
-    }
-
-    fn parse_identifier(token: &Token) -> Result<Expression, ParsingError> {
-        // already know token is the right type
-        match token {
-            Token::Identifier(val) => Ok(Expression::Identifier(val.clone())),
-            _ => Err(ParsingError(String::from(
-                "Error while processing identifier expression",
-            ))),
-        }
-    }
-
-    fn parse_integer(token: &Token) -> Result<Expression, ParsingError> {
-        match token {
-            Token::Int(int) => int
-                .parse::<i64>()
-                .map(Expression::Integer)
-                .map_err(|_| ParsingError(format!("Expected an INT, got {}", int))),
-            _ => Err(ParsingError(String::from(
-                "Error while processing identifier expression",
-            ))),
-        }
     }
 
     // only advances iterator when next token is not ';' and not EOF
@@ -170,6 +129,85 @@ impl<'a> ParserIter<'a> {
                 break;
             }
         }
+    }
+
+    fn parse_expression(
+        &mut self,
+        token: &Token,
+        precedence: Precedence,
+    ) -> Result<Expression, ParsingError> {
+        let prefix = match ParserIter::get_prefix_parse_fn(token) {
+            Some(func) => func,
+            None => {
+                return Err(ParsingError(format!(
+                    "Cannot parse '{token}' as a prefix operator"
+                )))
+            }
+        };
+        prefix(self, token)
+    }
+
+    fn get_prefix_parse_fn(token: &Token) -> Option<PrefixParseFn> {
+        match token {
+            Token::Identifier(_) => Some(ParserIter::parse_identifier),
+            Token::Int(_) => Some(ParserIter::parse_integer),
+            Token::Bang | Token::Minus => Some(ParserIter::parse_prefix_expression),
+            _ => None,
+        }
+    }
+
+    fn parse_identifier(_: &mut ParserIter, token: &Token) -> Result<Expression, ParsingError> {
+        match token {
+            Token::Identifier(val) => Ok(Expression::Identifier(val.clone())),
+            _ => Err(ParsingError(String::from(
+                "should never get here... fix types",
+            ))),
+        }
+    }
+
+    fn parse_integer(_: &mut ParserIter, token: &Token) -> Result<Expression, ParsingError> {
+        match token {
+            Token::Int(int) => int
+                .parse::<i64>()
+                .map(Expression::Integer)
+                .map_err(|_| ParsingError(format!("Expected an INT, got {} instead", int))),
+            _ => Err(ParsingError(String::from(
+                "should never get here... fix types",
+            ))),
+        }
+    }
+
+    fn parse_prefix_expression(
+        parser: &mut ParserIter,
+        token: &Token,
+    ) -> Result<Expression, ParsingError> {
+        let prefix = match token {
+            Token::Bang => Prefix::Bang,
+            Token::Minus => Prefix::Minus,
+            _ => {
+                return Err(ParsingError(String::from(
+                    "should never get here... fix types",
+                )))
+            }
+        };
+
+        let right_expression = match parser.next_token_or_end() {
+            Some(Token::Semicolon) => {
+                return Err(ParsingError(format!(
+                    "Expected right expression for '{}', got ';' instead",
+                    token
+                )))
+            }
+            Some(t) => parser.parse_expression(&t, Precedence::Prefix)?,
+            None => {
+                return Err(ParsingError(format!(
+                    "Expected right expression for '{}', got 'EOF' instead",
+                    token
+                )))
+            }
+        };
+
+        Ok(Expression::Prefix(prefix, Box::new(right_expression)))
     }
 }
 
