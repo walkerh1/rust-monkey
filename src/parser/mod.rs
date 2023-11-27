@@ -27,6 +27,7 @@ impl Precedence {
             Token::Lt | Token::Gt => Precedence::LessGreater,
             Token::Plus | Token::Minus => Precedence::Sum,
             Token::Asterisk | Token::Slash => Precedence::Product,
+            Token::Lparen => Precedence::Call,
             _ => Precedence::Lowest,
         }
     }
@@ -128,8 +129,12 @@ impl<'a> ParserIter<'a> {
 
         while let Some(right) = self.iter.peek() {
             if *right != Token::Semicolon {
-                let infix_fn = ParserIter::get_infix_parse_fn(right)?;
                 if precedence < Precedence::get_precedence(right) {
+                    println!("{right}");
+                    let infix_fn = match ParserIter::get_infix_parse_fn(right) {
+                        Some(func) => func,
+                        None => break,
+                    };
                     let operator = self.next_token_or_end()?;
                     left_expression = infix_fn(self, left_expression, &operator)?;
                 } else {
@@ -147,13 +152,14 @@ impl<'a> ParserIter<'a> {
         match token {
             Token::Identifier(_) => Ok(ParserIter::parse_identifier),
             Token::Int(_) => Ok(ParserIter::parse_integer),
-            Token::True | Token::False => Ok(ParserIter::parse_boolean),
             Token::Bang | Token::Minus => Ok(ParserIter::parse_prefix_expression),
+            Token::True | Token::False => Ok(ParserIter::parse_boolean),
+            Token::Lparen => Ok(ParserIter::parse_grouped_expression),
             _ => Err(ParsingError::InvalidPrefixOperator(token.clone())),
         }
     }
 
-    fn get_infix_parse_fn(token: &Token) -> Result<InfixParseFn, ParsingError> {
+    fn get_infix_parse_fn(token: &Token) -> Option<InfixParseFn> {
         match token {
             Token::Plus
             | Token::Minus
@@ -162,8 +168,8 @@ impl<'a> ParserIter<'a> {
             | Token::Lt
             | Token::Gt
             | Token::Eq
-            | Token::Noteq => Ok(ParserIter::parse_infix_expression),
-            _ => Err(ParsingError::InvalidInfixOperator(token.clone())),
+            | Token::Noteq => Some(ParserIter::parse_infix_expression),
+            _ => None,
         }
     }
 
@@ -196,6 +202,22 @@ impl<'a> ParserIter<'a> {
                 "should never get here... fix types",
             ))),
         }
+    }
+
+    fn parse_grouped_expression(
+        parser: &mut ParserIter,
+        _: &Token,
+    ) -> Result<Expression, ParsingError> {
+        let next_token = parser.next_token_or_end()?;
+        let exp = parser.parse_expression(&next_token, Precedence::Lowest)?;
+        if let Some(token) = parser.iter.peek() {
+            if *token != Token::Rparen {
+                return Err(ParsingError::UnexpectedToken(token.clone()));
+            } else {
+                parser.next_token_or_end()?;
+            }
+        }
+        Ok(exp)
     }
 
     fn parse_prefix_expression(
@@ -265,11 +287,18 @@ impl<'a> Iterator for ParserIter<'a> {
         }
         let token = self.iter.next()?;
         let result = match token {
-            Token::Let => Some(self.parse_let()),
-            Token::Return => Some(self.parse_return()),
+            Token::Let => {
+                let r = Some(self.parse_let());
+                self.skip_to_semicolon();
+                r
+            }
+            Token::Return => {
+                let r = Some(self.parse_return());
+                self.skip_to_semicolon();
+                r
+            }
             _ => Some(self.parse_expression_statement(&token)),
         };
-        self.skip_to_semicolon();
         result
     }
 }

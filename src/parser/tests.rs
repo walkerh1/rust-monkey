@@ -110,7 +110,7 @@ fn test_return_statement_parse_error_if_no_semicolon() {
     let input = "return 10
 let x = 5;
 ";
-    let expected_errors = vec![ParsingError::InvalidInfixOperator(Token::Let)];
+    let expected_errors = vec![ParsingError::UnexpectedToken(Token::Let)];
     let (ast_nodes, errors) = collect_parsing_results(input);
     assert_eq!(ast_nodes.len(), 0);
     assert_eq!(errors, expected_errors);
@@ -515,22 +515,40 @@ fn test_prefix_expression_parse_error_if_invalid_prefix() {
 }
 
 #[test]
+fn test_expression_parse_error_if_invalid_prefix_placement() {
+    let input = "6!";
+    let expected_errors = vec![ParsingError::UnexpectedEof];
+    let (nodes, errors) = collect_parsing_results(input);
+    println!("{nodes:?}");
+    assert_eq!(errors, expected_errors);
+}
+
+#[test]
+fn test_adjacent_expressions_parse() {
+    let input = "4!4;5(5+3);";
+    let expected = vec![
+        Statement::Expression(Expression::Integer(4)),
+        Statement::Expression(Expression::Prefix(
+            Prefix::Bang,
+            Box::new(Expression::Integer(4)),
+        )),
+        Statement::Expression(Expression::Integer(5)),
+        Statement::Expression(Expression::Infix(
+            Box::new(Expression::Integer(5)),
+            Infix::Plus,
+            Box::new(Expression::Integer(3)),
+        )),
+    ];
+    let (ast_nodes, _) = collect_parsing_results(input);
+    assert_eq!(ast_nodes, expected);
+}
+
+#[test]
 fn test_infix_expression_parse_error_if_no_rhs_expression() {
     let input = "4 + ;5 +";
     let expected_errors = vec![
         ParsingError::UnexpectedSemicolon,
         ParsingError::UnexpectedEof,
-    ];
-    let (_, errors) = collect_parsing_results(input);
-    assert_eq!(errors, expected_errors);
-}
-
-#[test]
-fn test_infix_expression_parse_error_if_invalid_infix() {
-    let input = "4 ! 5;6 !";
-    let expected_errors = vec![
-        ParsingError::InvalidInfixOperator(Token::Bang),
-        ParsingError::InvalidInfixOperator(Token::Bang),
     ];
     let (_, errors) = collect_parsing_results(input);
     assert_eq!(errors, expected_errors);
@@ -566,6 +584,52 @@ fn test_operator_precedence_thirteen() {
         )),
         Infix::Equal,
         Box::new(Expression::Boolean(Boolean::False)),
+    ))];
+    let (ast_nodes, _) = collect_parsing_results(input);
+    assert_eq!(ast_nodes, expected);
+}
+
+#[test]
+fn test_precedence_promotion_with_parentheses_one() {
+    let input = "(5 + 5) * 2;";
+    let expected = vec![Statement::Expression(Expression::Infix(
+        Box::new(Expression::Infix(
+            Box::new(Expression::Integer(5)),
+            Infix::Plus,
+            Box::new(Expression::Integer(5)),
+        )),
+        Infix::Multiply,
+        Box::new(Expression::Integer(2)),
+    ))];
+    let (ast_nodes, _) = collect_parsing_results(input);
+    assert_eq!(ast_nodes, expected);
+}
+
+#[test]
+fn test_precedence_promotion_with_parentheses_two() {
+    let input = "-(5 + 5)";
+    let expected = vec![Statement::Expression(Expression::Prefix(
+        Prefix::Minus,
+        Box::new(Expression::Infix(
+            Box::new(Expression::Integer(5)),
+            Infix::Plus,
+            Box::new(Expression::Integer(5)),
+        )),
+    ))];
+    let (ast_nodes, _) = collect_parsing_results(input);
+    assert_eq!(ast_nodes, expected);
+}
+
+#[test]
+fn test_precedence_promotion_with_parentheses_three() {
+    let input = "!(true == false)";
+    let expected = vec![Statement::Expression(Expression::Prefix(
+        Prefix::Bang,
+        Box::new(Expression::Infix(
+            Box::new(Expression::Boolean(Boolean::True)),
+            Infix::Equal,
+            Box::new(Expression::Boolean(Boolean::False)),
+        )),
     ))];
     let (ast_nodes, _) = collect_parsing_results(input);
     assert_eq!(ast_nodes, expected);
