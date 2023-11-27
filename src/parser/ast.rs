@@ -29,6 +29,7 @@ pub enum Expression {
     Integer(i64),
     Prefix(Prefix, Box<Expression>),
     Infix(Box<Expression>, Infix, Box<Expression>),
+    Boolean(Boolean),
 }
 
 impl Display for Expression {
@@ -41,6 +42,7 @@ impl Display for Expression {
                 Expression::Integer(val) => val.to_string(),
                 Expression::Prefix(prefix, exp) => format!("{prefix}{exp}"),
                 Expression::Infix(left, infix, right) => format!("{left} {infix} {right}"),
+                Expression::Boolean(boolean) => boolean.to_string(),
             }
         )
     }
@@ -91,6 +93,25 @@ impl Display for Infix {
                 Infix::LessThan => "<",
                 Infix::Equal => "==",
                 Infix::NotEqual => "!=",
+            }
+        )
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub enum Boolean {
+    True,
+    False,
+}
+
+impl Display for Boolean {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Boolean::True => "true",
+                Boolean::False => "false",
             }
         )
     }

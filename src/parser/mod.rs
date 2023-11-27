@@ -1,6 +1,6 @@
 use std::iter::Peekable;
 
-use self::ast::{Expression, Infix, ParsingError, Prefix, Statement};
+use self::ast::{Boolean, Expression, Infix, ParsingError, Prefix, Statement};
 use crate::lexer::{token::Token, Lexer, LexerIter};
 
 mod ast;
@@ -147,6 +147,7 @@ impl<'a> ParserIter<'a> {
         match token {
             Token::Identifier(_) => Ok(ParserIter::parse_identifier),
             Token::Int(_) => Ok(ParserIter::parse_integer),
+            Token::True | Token::False => Ok(ParserIter::parse_boolean),
             Token::Bang | Token::Minus => Ok(ParserIter::parse_prefix_expression),
             _ => Err(ParsingError::InvalidPrefixOperator(token.clone())),
         }
@@ -181,6 +182,16 @@ impl<'a> ParserIter<'a> {
                 .parse::<i64>()
                 .map(Expression::Integer)
                 .map_err(|_| ParsingError::InvalidInteger(int.clone())),
+            _ => Err(ParsingError::Generic(String::from(
+                "should never get here... fix types",
+            ))),
+        }
+    }
+
+    fn parse_boolean(_: &mut ParserIter, token: &Token) -> Result<Expression, ParsingError> {
+        match token {
+            Token::True => Ok(Expression::Boolean(Boolean::True)),
+            Token::False => Ok(Expression::Boolean(Boolean::False)),
             _ => Err(ParsingError::Generic(String::from(
                 "should never get here... fix types",
             ))),

@@ -3,7 +3,7 @@
 use crate::{
     lexer::token::Token,
     parser::{
-        ast::{Expression, Prefix, Statement},
+        ast::{Boolean, Expression, Prefix, Statement},
         Parser,
     },
 };
@@ -534,4 +534,39 @@ fn test_infix_expression_parse_error_if_invalid_infix() {
     ];
     let (_, errors) = collect_parsing_results(input);
     assert_eq!(errors, expected_errors);
+}
+
+#[test]
+fn test_boolean_expression() {
+    let input = "let a = true; return false; true == false";
+    let expected = vec![
+        Statement::Let(
+            Expression::Identifier(String::from("a")),
+            Expression::Boolean(Boolean::True),
+        ),
+        Statement::Return(Expression::Boolean(Boolean::False)),
+        Statement::Expression(Expression::Infix(
+            Box::new(Expression::Boolean(Boolean::True)),
+            Infix::Equal,
+            Box::new(Expression::Boolean(Boolean::False)),
+        )),
+    ];
+    let (ast_nodes, _) = collect_parsing_results(input);
+    assert_eq!(ast_nodes, expected);
+}
+
+#[test]
+fn test_operator_precedence_thirteen() {
+    let input = "3 > 5 == false"; // ((3 > 5) == false)
+    let expected = vec![Statement::Expression(Expression::Infix(
+        Box::new(Expression::Infix(
+            Box::new(Expression::Integer(3)),
+            Infix::GreaterThan,
+            Box::new(Expression::Integer(5)),
+        )),
+        Infix::Equal,
+        Box::new(Expression::Boolean(Boolean::False)),
+    ))];
+    let (ast_nodes, _) = collect_parsing_results(input);
+    assert_eq!(ast_nodes, expected);
 }
