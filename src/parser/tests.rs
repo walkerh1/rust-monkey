@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use crate::parser::{
-    ast::{Expression, Prefix, Statement},
+    ast::{self, Expression, Prefix, Statement},
     Parser,
 };
 
@@ -287,5 +287,236 @@ fn test_infix_expressions() {
     ];
     let (ast_nodes, errors) = collect_parsing_results(input);
     println!("{errors:?}");
+    assert_eq!(ast_nodes, expected);
+}
+
+#[test]
+fn test_operator_precedence_one() {
+    let input = "-a * b"; // ((-a) * b)
+    let expected = [Statement::Expression(Expression::Infix(
+        Box::new(Expression::Prefix(
+            Prefix::Minus,
+            Box::new(Expression::Identifier(String::from("a"))),
+        )),
+        Infix::Multiply,
+        Box::new(Expression::Identifier(String::from("b"))),
+    ))];
+    let (ast_nodes, _) = collect_parsing_results(input);
+    assert_eq!(ast_nodes, expected);
+}
+
+#[test]
+fn test_operator_precedence_two() {
+    let input = "!-a"; // (!(-a))
+    let expected = [Statement::Expression(Expression::Prefix(
+        Prefix::Bang,
+        Box::new(Expression::Prefix(
+            Prefix::Minus,
+            Box::new(Expression::Identifier(String::from("a"))),
+        )),
+    ))];
+    let (ast_nodes, _) = collect_parsing_results(input);
+    assert_eq!(ast_nodes, expected);
+}
+
+#[test]
+fn test_operator_precedence_three() {
+    let input = "a + b + c"; // ((a + b) + c)
+    let expected = [Statement::Expression(Expression::Infix(
+        Box::new(Expression::Infix(
+            Box::new(Expression::Identifier(String::from("a"))),
+            Infix::Plus,
+            Box::new(Expression::Identifier(String::from("b"))),
+        )),
+        Infix::Plus,
+        Box::new(Expression::Identifier(String::from("c"))),
+    ))];
+    let (ast_nodes, _) = collect_parsing_results(input);
+    assert_eq!(ast_nodes, expected);
+}
+
+#[test]
+fn test_operator_precedence_four() {
+    let input = "a + b - c"; // ((a + b) - c)
+    let expected = [Statement::Expression(Expression::Infix(
+        Box::new(Expression::Infix(
+            Box::new(Expression::Identifier(String::from("a"))),
+            Infix::Plus,
+            Box::new(Expression::Identifier(String::from("b"))),
+        )),
+        Infix::Minus,
+        Box::new(Expression::Identifier(String::from("c"))),
+    ))];
+    let (ast_nodes, _) = collect_parsing_results(input);
+    assert_eq!(ast_nodes, expected);
+}
+
+#[test]
+fn test_operator_precedence_five() {
+    let input = "a * b * c"; // ((a * b) * c)
+    let expected = [Statement::Expression(Expression::Infix(
+        Box::new(Expression::Infix(
+            Box::new(Expression::Identifier(String::from("a"))),
+            Infix::Multiply,
+            Box::new(Expression::Identifier(String::from("b"))),
+        )),
+        Infix::Multiply,
+        Box::new(Expression::Identifier(String::from("c"))),
+    ))];
+    let (ast_nodes, _) = collect_parsing_results(input);
+    assert_eq!(ast_nodes, expected);
+}
+
+#[test]
+fn test_operator_precedence_six() {
+    let input = "a * b / c"; // ((a * b) / c)
+    let expected = [Statement::Expression(Expression::Infix(
+        Box::new(Expression::Infix(
+            Box::new(Expression::Identifier(String::from("a"))),
+            Infix::Multiply,
+            Box::new(Expression::Identifier(String::from("b"))),
+        )),
+        Infix::Divide,
+        Box::new(Expression::Identifier(String::from("c"))),
+    ))];
+    let (ast_nodes, _) = collect_parsing_results(input);
+    assert_eq!(ast_nodes, expected);
+}
+
+#[test]
+fn test_operator_precedence_seven() {
+    let input = "a + b / c"; // (a + (b / c))
+    let expected = [Statement::Expression(Expression::Infix(
+        Box::new(Expression::Identifier(String::from("a"))),
+        Infix::Plus,
+        Box::new(Expression::Infix(
+            Box::new(Expression::Identifier(String::from("b"))),
+            Infix::Divide,
+            Box::new(Expression::Identifier(String::from("c"))),
+        )),
+    ))];
+    let (ast_nodes, _) = collect_parsing_results(input);
+    assert_eq!(ast_nodes, expected);
+}
+
+#[test]
+fn test_operator_precedence_eight() {
+    let input = "a + b * c + d / e - f"; // (((a + (b * c)) + (d / e)) - f)
+    let expected = [Statement::Expression(Expression::Infix(
+        Box::new(Expression::Infix(
+            Box::new(Expression::Infix(
+                Box::new(Expression::Identifier(String::from("a"))),
+                Infix::Plus,
+                Box::new(Expression::Infix(
+                    Box::new(Expression::Identifier(String::from("b"))),
+                    Infix::Multiply,
+                    Box::new(Expression::Identifier(String::from("c"))),
+                )),
+            )),
+            Infix::Plus,
+            Box::new(Expression::Infix(
+                Box::new(Expression::Identifier(String::from("d"))),
+                Infix::Divide,
+                Box::new(Expression::Identifier(String::from("e"))),
+            )),
+        )),
+        Infix::Minus,
+        Box::new(Expression::Identifier(String::from("f"))),
+    ))];
+    let (ast_nodes, _) = collect_parsing_results(input);
+    assert_eq!(ast_nodes, expected);
+}
+
+#[test]
+fn test_operator_precedence_nine() {
+    let input = "3 + 4; -5 * 5"; // (3 + 4)((-5) * 5)
+    let expected = [
+        Statement::Expression(Expression::Infix(
+            Box::new(Expression::Integer(3)),
+            Infix::Plus,
+            Box::new(Expression::Integer(4)),
+        )),
+        Statement::Expression(Expression::Infix(
+            Box::new(Expression::Prefix(
+                Prefix::Minus,
+                Box::new(Expression::Integer(5)),
+            )),
+            Infix::Multiply,
+            Box::new(Expression::Integer(5)),
+        )),
+    ];
+    let (ast_nodes, _) = collect_parsing_results(input);
+    assert_eq!(ast_nodes, expected);
+}
+
+#[test]
+fn test_operator_precedence_ten() {
+    let input = "5 > 4 == 3 < 4"; // ((5 > 4) == (3 < 4))
+    let expected = [Statement::Expression(Expression::Infix(
+        Box::new(Expression::Infix(
+            Box::new(Expression::Integer(5)),
+            Infix::GreaterThan,
+            Box::new(Expression::Integer(4)),
+        )),
+        Infix::Equal,
+        Box::new(Expression::Infix(
+            Box::new(Expression::Integer(3)),
+            Infix::LessThan,
+            Box::new(Expression::Integer(4)),
+        )),
+    ))];
+    let (ast_nodes, _) = collect_parsing_results(input);
+    assert_eq!(ast_nodes, expected);
+}
+
+#[test]
+fn test_operator_precedence_eleven() {
+    let input = "5 < 4 != 3 > 4"; // ((5 < 4) != (3 > 4))
+    let expected = [Statement::Expression(Expression::Infix(
+        Box::new(Expression::Infix(
+            Box::new(Expression::Integer(5)),
+            Infix::LessThan,
+            Box::new(Expression::Integer(4)),
+        )),
+        Infix::NotEqual,
+        Box::new(Expression::Infix(
+            Box::new(Expression::Integer(3)),
+            Infix::GreaterThan,
+            Box::new(Expression::Integer(4)),
+        )),
+    ))];
+    let (ast_nodes, _) = collect_parsing_results(input);
+    assert_eq!(ast_nodes, expected);
+}
+
+#[test]
+fn test_operator_precedence_twelve() {
+    let input = "3 + 4 * 5 == 3 * 1 + 4 * 5"; // ((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))
+    let expected = [Statement::Expression(Expression::Infix(
+        Box::new(Expression::Infix(
+            Box::new(Expression::Integer(3)),
+            Infix::Plus,
+            Box::new(Expression::Infix(
+                Box::new(Expression::Integer(4)),
+                Infix::Multiply,
+                Box::new(Expression::Integer(5)),
+            )),
+        )),
+        Infix::Equal,
+        Box::new(Expression::Infix(
+            Box::new(Expression::Infix(
+                Box::new(Expression::Integer(3)),
+                Infix::Multiply,
+                Box::new(Expression::Integer(1)),
+            )),
+            Infix::Plus,
+            Box::new(Expression::Infix(
+                Box::new(Expression::Integer(4)),
+                Infix::Multiply,
+                Box::new(Expression::Integer(5)),
+            )),
+        )),
+    ))];
+    let (ast_nodes, _) = collect_parsing_results(input);
     assert_eq!(ast_nodes, expected);
 }

@@ -162,13 +162,17 @@ impl<'a> ParserIter<'a> {
 
         loop {
             let infix_fn = if let Some(right) = self.iter.peek() {
-                // if *right == Token::Semicolon {
-                //     break;
-                // }
+                if *right == Token::Semicolon {
+                    break;
+                }
                 if precedence < Precedence::get_precedence(right) {
                     match ParserIter::get_infix_parse_fn(right) {
                         Some(func) => func,
-                        None => break,
+                        None => {
+                            return Err(ParsingError(format!(
+                                "Cannot parse '{token}' as a infix operator"
+                            )))
+                        }
                     }
                 } else {
                     break;
@@ -187,8 +191,6 @@ impl<'a> ParserIter<'a> {
 
             left_expression = infix_fn(self, left_expression, &next_token)?;
         }
-
-        println!("{left_expression:?}");
 
         Ok(left_expression)
     }
