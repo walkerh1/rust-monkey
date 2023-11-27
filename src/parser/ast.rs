@@ -1,4 +1,4 @@
-use std::fmt::{format, Display, Formatter};
+use std::fmt::{Display, Formatter};
 
 use crate::lexer::token::Token;
 
@@ -47,18 +47,6 @@ impl Display for Expression {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct ParsingError(pub String);
-
-impl ParsingError {
-    pub fn new(expected: &Token, received: &Token) -> ParsingError {
-        ParsingError(format!(
-            "Expected next token to be '{}', got '{}' instead",
-            expected, received
-        ))
-    }
-}
-
-#[derive(Debug, PartialEq)]
 pub enum Prefix {
     Minus,
     Bang,
@@ -103,6 +91,38 @@ impl Display for Infix {
                 Infix::LessThan => "<",
                 Infix::Equal => "==",
                 Infix::NotEqual => "!=",
+            }
+        )
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub enum ParsingError {
+    UnexpectedToken(Token),
+    UnexpectedEof,
+    UnexpectedSemicolon,
+    InvalidPrefixOperator(Token),
+    InvalidInfixOperator(Token),
+    InvalidInteger(String),
+    Generic(String),
+}
+
+impl Display for ParsingError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                ParsingError::UnexpectedToken(token) => format!("Unexpected token: '{token}'"),
+                ParsingError::UnexpectedEof => "Unexpected EOF".to_string(),
+                ParsingError::UnexpectedSemicolon => "Unexpected end of statement: ';'".to_string(),
+                ParsingError::InvalidPrefixOperator(token) =>
+                    format!("'{token}' is not a valid prefix operator"),
+                ParsingError::InvalidInfixOperator(token) =>
+                    format!("'{token}' is not a valid infix operator"),
+                ParsingError::InvalidInteger(string) =>
+                    format!("Cannot parse '{}' as a valid integer", *string),
+                ParsingError::Generic(string) => string.to_string(),
             }
         )
     }

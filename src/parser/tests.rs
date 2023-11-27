@@ -1,8 +1,11 @@
 #![cfg(test)]
 
-use crate::parser::{
-    ast::{self, Expression, Prefix, Statement},
-    Parser,
+use crate::{
+    lexer::token::Token,
+    parser::{
+        ast::{Expression, Prefix, Statement},
+        Parser,
+    },
 };
 
 use super::ast::{Infix, ParsingError};
@@ -19,7 +22,7 @@ fn collect_parsing_results(input: &str) -> (Vec<Statement>, Vec<ParsingError>) {
 #[test]
 fn test_let_statement() {
     let input = "let x = 5;";
-    let expected: Vec<_> = vec![Statement::Let(
+    let expected = vec![Statement::Let(
         Expression::Identifier(String::from("x")),
         Expression::Integer(5),
     )];
@@ -31,9 +34,7 @@ fn test_let_statement() {
 #[test]
 fn test_let_parse_error_if_no_identifier() {
     let input = "let = 5;";
-    let expected_errors = vec![ParsingError(String::from(
-        "Expected next token to be 'IDENT', got '=' instead",
-    ))];
+    let expected_errors = vec![ParsingError::UnexpectedToken(Token::Assign)];
     let (ast_nodes, errors) = collect_parsing_results(input);
     assert_eq!(ast_nodes.len(), 0);
     assert_eq!(errors, expected_errors);
@@ -42,9 +43,7 @@ fn test_let_parse_error_if_no_identifier() {
 #[test]
 fn test_let_parse_error_if_no_assign() {
     let input = "let x 5;";
-    let expected_errors = vec![ParsingError(String::from(
-        "Expected next token to be '=', got '5' instead",
-    ))];
+    let expected_errors = vec![ParsingError::UnexpectedToken(Token::Int(String::from("5")))];
     let (ast_nodes, errors) = collect_parsing_results(input);
     assert_eq!(ast_nodes.len(), 0);
     assert_eq!(errors, expected_errors);
@@ -53,9 +52,7 @@ fn test_let_parse_error_if_no_assign() {
 #[test]
 fn test_let_statement_parse_error_if_no_semicolon() {
     let input = "let x = 5";
-    let expected_errors = vec![ParsingError(String::from(
-        "Expected next token to be ';', got 'EOF' instead",
-    ))];
+    let expected_errors = vec![ParsingError::UnexpectedEof];
     let (ast_nodes, errors) = collect_parsing_results(input);
     assert_eq!(ast_nodes.len(), 0);
     assert_eq!(errors, expected_errors);
@@ -66,8 +63,8 @@ fn test_let_statement_parse_error_if_no_rhs_expression() {
     let input = "let x =;
 let y =";
     let expected_errors = vec![
-        ParsingError(String::from("Expected expression, got ';' instead")),
-        ParsingError(String::from("Expected expression, got 'EOF' instead")),
+        ParsingError::UnexpectedSemicolon,
+        ParsingError::UnexpectedEof,
     ];
     let (ast_nodes, errors) = collect_parsing_results(input);
     assert_eq!(ast_nodes.len(), 0);
@@ -81,13 +78,9 @@ let x =;
 let x = 10;
 let y 3;";
     let expected_errors = vec![
-        ParsingError(String::from(
-            "Expected next token to be 'IDENT', got ';' instead",
-        )),
-        ParsingError(String::from("Expected expression, got ';' instead")),
-        ParsingError(String::from(
-            "Expected next token to be '=', got '3' instead",
-        )),
+        ParsingError::UnexpectedSemicolon,
+        ParsingError::UnexpectedSemicolon,
+        ParsingError::UnexpectedToken(Token::Int(String::from("3"))),
     ];
     let (ast_nodes, errors) = collect_parsing_results(input);
     assert_eq!(ast_nodes.len(), 1);
@@ -106,9 +99,7 @@ fn test_return_statement() {
 #[test]
 fn test_return_statement_parse_error_if_no_expression() {
     let input = "return ;";
-    let expected_errors = vec![ParsingError(String::from(
-        "Expected expression, got ';' instead",
-    ))];
+    let expected_errors = vec![ParsingError::UnexpectedSemicolon];
     let (ast_nodes, errors) = collect_parsing_results(input);
     assert_eq!(ast_nodes.len(), 0);
     assert_eq!(errors, expected_errors);
@@ -119,9 +110,7 @@ fn test_return_statement_parse_error_if_no_semicolon() {
     let input = "return 10
 let x = 5;
 ";
-    let expected_errors = vec![ParsingError(String::from(
-        "Expected next token to be ';', got 'let' instead",
-    ))];
+    let expected_errors = vec![ParsingError::UnexpectedToken(Token::Let)];
     let (ast_nodes, errors) = collect_parsing_results(input);
     assert_eq!(ast_nodes.len(), 0);
     assert_eq!(errors, expected_errors);
@@ -220,12 +209,8 @@ fn test_prefix_expressions_error_if_no_right_expression() {
 !;
 -";
     let expected_errors = vec![
-        ParsingError(String::from(
-            "Expected right expression for '!', got ';' instead",
-        )),
-        ParsingError(String::from(
-            "Expected right expression for '-', got 'EOF' instead",
-        )),
+        ParsingError::UnexpectedSemicolon,
+        ParsingError::UnexpectedEof,
     ];
     let (ast_nodes, errors) = collect_parsing_results(input);
     assert_eq!(errors, expected_errors);

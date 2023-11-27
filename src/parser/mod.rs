@@ -39,34 +39,26 @@ pub struct ParserIter<'a> {
 impl<'a> ParserIter<'a> {
     fn parse_let(&mut self) -> Result<Statement, ParsingError> {
         // after 'let' next token should be an identifier
-        let expected = Token::Identifier(String::from("IDENT"));
         let identifier = Expression::Identifier(match self.next_token_or_end() {
             Some(Token::Identifier(id)) => id,
-            Some(received) => return Err(ParsingError::new(&expected, &received)),
-            None => return Err(ParsingError::new(&expected, &Token::Eof)),
+            Some(Token::Semicolon) => return Err(ParsingError::UnexpectedSemicolon),
+            Some(token) => return Err(ParsingError::UnexpectedToken(token)),
+            None => return Err(ParsingError::UnexpectedEof),
         });
 
         // after identifier next token should be '='
         match self.next_token_or_end() {
             Some(Token::Assign) => {}
-            Some(token) => return Err(ParsingError::new(&Token::Assign, &token)),
-            None => return Err(ParsingError::new(&Token::Assign, &Token::Eof)),
-        }
+            Some(token) => return Err(ParsingError::UnexpectedToken(token)),
+            None => return Err(ParsingError::UnexpectedEof),
+        };
 
         // after '=' next token should be the start of an expression, which
         // means it should not be ';' or EOF
         let token = match self.next_token_or_end() {
-            Some(Token::Semicolon) => {
-                return Err(ParsingError(format!(
-                    "Expected expression, got ';' instead"
-                )))
-            }
+            Some(Token::Semicolon) => return Err(ParsingError::UnexpectedSemicolon),
             Some(t) => t,
-            None => {
-                return Err(ParsingError(format!(
-                    "Expected expression, got 'EOF' instead"
-                )))
-            }
+            None => return Err(ParsingError::UnexpectedEof),
         };
 
         let expression = match self.parse_expression(&token, Precedence::Lowest) {
@@ -77,8 +69,8 @@ impl<'a> ParserIter<'a> {
         // after expression next token should be ';'
         match self.iter.peek() {
             Some(Token::Semicolon) => {}
-            Some(token) => return Err(ParsingError::new(&Token::Semicolon, token)),
-            None => return Err(ParsingError::new(&Token::Semicolon, &Token::Eof)),
+            Some(token) => return Err(ParsingError::UnexpectedToken(token.clone())),
+            None => return Err(ParsingError::UnexpectedEof),
         }
 
         Ok(Statement::Let(identifier, expression))
@@ -88,17 +80,9 @@ impl<'a> ParserIter<'a> {
         // after 'let' next token should be beginning of expression, which
         // means it should not be ';' or EOF
         let token = match self.next_token_or_end() {
-            Some(Token::Semicolon) => {
-                return Err(ParsingError(format!(
-                    "Expected expression, got ';' instead"
-                )))
-            }
+            Some(Token::Semicolon) => return Err(ParsingError::UnexpectedSemicolon),
             Some(t) => t,
-            None => {
-                return Err(ParsingError(format!(
-                    "Expected expression, got 'EOF' instead"
-                )))
-            }
+            None => return Err(ParsingError::UnexpectedEof),
         };
 
         let expression = match self.parse_expression(&token, Precedence::Lowest) {
@@ -109,8 +93,8 @@ impl<'a> ParserIter<'a> {
         // after expression next token should be ';'
         match self.iter.peek() {
             Some(Token::Semicolon) => {}
-            Some(token) => return Err(ParsingError::new(&Token::Semicolon, token)),
-            None => return Err(ParsingError::new(&Token::Semicolon, &Token::Eof)),
+            Some(token) => return Err(ParsingError::UnexpectedToken(token.clone())),
+            None => return Err(ParsingError::UnexpectedEof),
         };
 
         Ok(Statement::Return(expression))
@@ -151,11 +135,7 @@ impl<'a> ParserIter<'a> {
     ) -> Result<Expression, ParsingError> {
         let prefix_fn = match ParserIter::get_prefix_parse_fn(token) {
             Some(func) => func,
-            None => {
-                return Err(ParsingError(format!(
-                    "Cannot parse '{token}' as a prefix operator"
-                )))
-            }
+            None => return Err(ParsingError::InvalidPrefixOperator(token.clone())),
         };
 
         let mut left_expression = prefix_fn(self, token)?;
@@ -168,11 +148,7 @@ impl<'a> ParserIter<'a> {
                 if precedence < Precedence::get_precedence(right) {
                     match ParserIter::get_infix_parse_fn(right) {
                         Some(func) => func,
-                        None => {
-                            return Err(ParsingError(format!(
-                                "Cannot parse '{token}' as a infix operator"
-                            )))
-                        }
+                        None => return Err(ParsingError::InvalidInfixOperator(token.clone())),
                     }
                 } else {
                     break;
@@ -181,15 +157,13 @@ impl<'a> ParserIter<'a> {
                 break;
             };
 
-            let next_token = match self.next_token_or_end() {
-                Some(Token::Semicolon) => {
-                    return Err(ParsingError(String::from("found semicolon")))
-                }
+            let operator = match self.next_token_or_end() {
+                Some(Token::Semicolon) => return Err(ParsingError::UnexpectedSemicolon),
                 Some(t) => t,
-                None => return Err(ParsingError(String::from("found EOF"))),
+                None => return Err(ParsingError::UnexpectedEof),
             };
 
-            left_expression = infix_fn(self, left_expression, &next_token)?;
+            left_expression = infix_fn(self, left_expression, &operator)?;
         }
 
         Ok(left_expression)
@@ -221,7 +195,7 @@ impl<'a> ParserIter<'a> {
     fn parse_identifier(_: &mut ParserIter, token: &Token) -> Result<Expression, ParsingError> {
         match token {
             Token::Identifier(val) => Ok(Expression::Identifier(val.clone())),
-            _ => Err(ParsingError(String::from(
+            _ => Err(ParsingError::Generic(String::from(
                 "should never get here... fix types",
             ))),
         }
@@ -232,8 +206,8 @@ impl<'a> ParserIter<'a> {
             Token::Int(int) => int
                 .parse::<i64>()
                 .map(Expression::Integer)
-                .map_err(|_| ParsingError(format!("Expected an INT, got {} instead", int))),
-            _ => Err(ParsingError(String::from(
+                .map_err(|_| ParsingError::InvalidInteger(int.clone())),
+            _ => Err(ParsingError::Generic(String::from(
                 "should never get here... fix types",
             ))),
         }
@@ -247,26 +221,16 @@ impl<'a> ParserIter<'a> {
             Token::Bang => Prefix::Bang,
             Token::Minus => Prefix::Minus,
             _ => {
-                return Err(ParsingError(String::from(
+                return Err(ParsingError::Generic(String::from(
                     "should never get here... fix types",
                 )))
             }
         };
 
         let right_expression = match parser.next_token_or_end() {
-            Some(Token::Semicolon) => {
-                return Err(ParsingError(format!(
-                    "Expected right expression for '{}', got ';' instead",
-                    token
-                )))
-            }
+            Some(Token::Semicolon) => return Err(ParsingError::UnexpectedSemicolon),
             Some(t) => parser.parse_expression(&t, Precedence::Prefix)?,
-            None => {
-                return Err(ParsingError(format!(
-                    "Expected right expression for '{}', got 'EOF' instead",
-                    token
-                )))
-            }
+            None => return Err(ParsingError::UnexpectedEof),
         };
 
         Ok(Expression::Prefix(prefix, Box::new(right_expression)))
@@ -275,9 +239,9 @@ impl<'a> ParserIter<'a> {
     fn parse_infix_expression(
         parser: &mut ParserIter,
         left_expression: Expression,
-        token: &Token,
+        operator: &Token,
     ) -> Result<Expression, ParsingError> {
-        let infix = match token {
+        let infix = match operator {
             Token::Plus => Infix::Plus,
             Token::Minus => Infix::Minus,
             Token::Asterisk => Infix::Multiply,
@@ -289,7 +253,7 @@ impl<'a> ParserIter<'a> {
             _ => todo!(),
         };
 
-        let precedence = Precedence::get_precedence(token);
+        let precedence = Precedence::get_precedence(operator);
 
         let right_expression = match parser.next_token_or_end() {
             Some(token) => parser.parse_expression(&token, precedence)?,
