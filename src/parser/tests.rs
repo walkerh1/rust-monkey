@@ -110,7 +110,7 @@ fn test_return_statement_parse_error_if_no_semicolon() {
     let input = "return 10
 let x = 5;
 ";
-    let expected_errors = vec![ParsingError::UnexpectedToken(Token::Let)];
+    let expected_errors = vec![ParsingError::InvalidInfixOperator(Token::Let)];
     let (ast_nodes, errors) = collect_parsing_results(input);
     assert_eq!(ast_nodes.len(), 0);
     assert_eq!(errors, expected_errors);
@@ -504,4 +504,34 @@ fn test_operator_precedence_twelve() {
     ))];
     let (ast_nodes, _) = collect_parsing_results(input);
     assert_eq!(ast_nodes, expected);
+}
+
+#[test]
+fn test_prefix_expression_parse_error_if_invalid_prefix() {
+    let input = "+4;";
+    let expected_errors = vec![ParsingError::InvalidPrefixOperator(Token::Plus)];
+    let (_, errors) = collect_parsing_results(input);
+    assert_eq!(errors, expected_errors);
+}
+
+#[test]
+fn test_infix_expression_parse_error_if_no_rhs_expression() {
+    let input = "4 + ;5 +";
+    let expected_errors = vec![
+        ParsingError::UnexpectedSemicolon,
+        ParsingError::UnexpectedEof,
+    ];
+    let (_, errors) = collect_parsing_results(input);
+    assert_eq!(errors, expected_errors);
+}
+
+#[test]
+fn test_infix_expression_parse_error_if_invalid_infix() {
+    let input = "4 ! 5;6 !";
+    let expected_errors = vec![
+        ParsingError::InvalidInfixOperator(Token::Bang),
+        ParsingError::InvalidInfixOperator(Token::Bang),
+    ];
+    let (_, errors) = collect_parsing_results(input);
+    assert_eq!(errors, expected_errors);
 }

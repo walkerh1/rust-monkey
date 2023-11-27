@@ -122,48 +122,37 @@ impl<'a> ParserIter<'a> {
         token: &Token,
         precedence: Precedence,
     ) -> Result<Expression, ParsingError> {
-        let prefix_fn = match ParserIter::get_prefix_parse_fn(token) {
-            Some(func) => func,
-            None => return Err(ParsingError::InvalidPrefixOperator(token.clone())),
-        };
+        let prefix_fn = ParserIter::get_prefix_parse_fn(token)?;
 
         let mut left_expression = prefix_fn(self, token)?;
 
-        loop {
-            let infix_fn = if let Some(right) = self.iter.peek() {
-                if *right == Token::Semicolon {
-                    break;
-                }
+        while let Some(right) = self.iter.peek() {
+            if *right != Token::Semicolon {
+                let infix_fn = ParserIter::get_infix_parse_fn(right)?;
                 if precedence < Precedence::get_precedence(right) {
-                    match ParserIter::get_infix_parse_fn(right) {
-                        Some(func) => func,
-                        None => return Err(ParsingError::InvalidInfixOperator(token.clone())),
-                    }
+                    let operator = self.next_token_or_end()?;
+                    left_expression = infix_fn(self, left_expression, &operator)?;
                 } else {
                     break;
                 }
             } else {
                 break;
-            };
-
-            let operator = self.next_token_or_end()?;
-
-            left_expression = infix_fn(self, left_expression, &operator)?;
+            }
         }
 
         Ok(left_expression)
     }
 
-    fn get_prefix_parse_fn(token: &Token) -> Option<PrefixParseFn> {
+    fn get_prefix_parse_fn(token: &Token) -> Result<PrefixParseFn, ParsingError> {
         match token {
-            Token::Identifier(_) => Some(ParserIter::parse_identifier),
-            Token::Int(_) => Some(ParserIter::parse_integer),
-            Token::Bang | Token::Minus => Some(ParserIter::parse_prefix_expression),
-            _ => None,
+            Token::Identifier(_) => Ok(ParserIter::parse_identifier),
+            Token::Int(_) => Ok(ParserIter::parse_integer),
+            Token::Bang | Token::Minus => Ok(ParserIter::parse_prefix_expression),
+            _ => Err(ParsingError::InvalidPrefixOperator(token.clone())),
         }
     }
 
-    fn get_infix_parse_fn(token: &Token) -> Option<InfixParseFn> {
+    fn get_infix_parse_fn(token: &Token) -> Result<InfixParseFn, ParsingError> {
         match token {
             Token::Plus
             | Token::Minus
@@ -172,8 +161,8 @@ impl<'a> ParserIter<'a> {
             | Token::Lt
             | Token::Gt
             | Token::Eq
-            | Token::Noteq => Some(ParserIter::parse_infix_expression),
-            _ => None,
+            | Token::Noteq => Ok(ParserIter::parse_infix_expression),
+            _ => Err(ParsingError::InvalidInfixOperator(token.clone())),
         }
     }
 
@@ -233,7 +222,11 @@ impl<'a> ParserIter<'a> {
             Token::Gt => Infix::GreaterThan,
             Token::Eq => Infix::Equal,
             Token::Noteq => Infix::NotEqual,
-            _ => todo!(),
+            _ => {
+                return Err(ParsingError::Generic(String::from(
+                    "should never get here... fix types",
+                )))
+            }
         };
 
         let precedence = Precedence::get_precedence(operator);
