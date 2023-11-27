@@ -634,3 +634,42 @@ fn test_precedence_promotion_with_parentheses_three() {
     let (ast_nodes, _) = collect_parsing_results(input);
     assert_eq!(ast_nodes, expected);
 }
+
+#[test]
+fn test_if_expression() {
+    let input = "if (x < y) { x }";
+    let expected = vec![Statement::Expression(Expression::If(
+        Box::new(Expression::Infix(
+            Box::new(Expression::Identifier(String::from("x"))),
+            Infix::LessThan,
+            Box::new(Expression::Identifier(String::from("y"))),
+        )),
+        vec![Statement::Expression(Expression::Identifier(String::from(
+            "x",
+        )))],
+        None,
+    ))];
+    let (ast_nodes, _) = collect_parsing_results(input);
+    assert_eq!(ast_nodes, expected);
+}
+
+#[test]
+fn test_if_expression_with_else() {
+    let input = "if (x < y) { x } else { y }";
+    let expected = vec![Statement::Expression(Expression::If(
+        Box::new(Expression::Infix(
+            Box::new(Expression::Identifier(String::from("x"))),
+            Infix::LessThan,
+            Box::new(Expression::Identifier(String::from("y"))),
+        )),
+        vec![Statement::Expression(Expression::Identifier(String::from(
+            "x",
+        )))],
+        Some(vec![Statement::Expression(Expression::Identifier(
+            String::from("y"),
+        ))]),
+    ))];
+    let (ast_nodes, errors) = collect_parsing_results(input);
+    println!("{errors:?}");
+    assert_eq!(ast_nodes, expected);
+}

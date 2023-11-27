@@ -1,6 +1,6 @@
 use std::iter::Peekable;
 
-use self::ast::{Boolean, Expression, Infix, ParsingError, Prefix, Statement};
+use self::ast::{Block, Boolean, Expression, Infix, ParsingError, Prefix, Statement};
 use crate::lexer::{token::Token, Lexer, LexerIter};
 
 mod ast;
@@ -33,6 +33,7 @@ impl Precedence {
     }
 }
 
+#[derive(Debug)]
 pub struct ParserIter<'a> {
     iter: Peekable<LexerIter<'a>>,
 }
@@ -99,6 +100,23 @@ impl<'a> ParserIter<'a> {
         Ok(Statement::Expression(expression))
     }
 
+    fn parse_block(&mut self) -> Result<Block, ParsingError> {
+        let mut block = vec![];
+
+        while let Some(next) = self.iter.peek() {
+            if *next != Token::Rbrace {
+                match self.next() {
+                    Some(res) => block.push(res?),
+                    None => return Err(ParsingError::UnexpectedEof),
+                };
+            } else {
+                break;
+            }
+        }
+
+        Ok(block)
+    }
+
     // only advances iterator when next token is not ';' and not EOF
     fn next_token_or_end(&mut self) -> Result<Token, ParsingError> {
         match self.iter.peek() {
@@ -130,7 +148,6 @@ impl<'a> ParserIter<'a> {
         while let Some(right) = self.iter.peek() {
             if *right != Token::Semicolon {
                 if precedence < Precedence::get_precedence(right) {
-                    println!("{right}");
                     let infix_fn = match ParserIter::get_infix_parse_fn(right) {
                         Some(func) => func,
                         None => break,
@@ -155,6 +172,7 @@ impl<'a> ParserIter<'a> {
             Token::Bang | Token::Minus => Ok(ParserIter::parse_prefix_expression),
             Token::True | Token::False => Ok(ParserIter::parse_boolean),
             Token::Lparen => Ok(ParserIter::parse_grouped_expression),
+            Token::If => Ok(ParserIter::parse_if_expression),
             _ => Err(ParsingError::InvalidPrefixOperator(token.clone())),
         }
     }
@@ -218,6 +236,59 @@ impl<'a> ParserIter<'a> {
             }
         }
         Ok(exp)
+    }
+
+    fn parse_if_expression(parser: &mut ParserIter, _: &Token) -> Result<Expression, ParsingError> {
+        // expect a left paren after an if token
+        match parser.next_token_or_end()? {
+            Token::Lparen => {}
+            t => return Err(ParsingError::UnexpectedToken(t)),
+        }
+
+        let condition = parser.parse_expression(&Token::Lparen, Precedence::Lowest)?;
+
+        // expect left brace after condition parsed
+        match parser.next_token_or_end()? {
+            Token::Lbrace => {}
+            t => return Err(ParsingError::UnexpectedToken(t)),
+        };
+
+        let consequence = parser.parse_block()?;
+
+        // expect right brace after block parsed
+        match parser.next_token_or_end()? {
+            Token::Rbrace => {}
+            t => return Err(ParsingError::UnexpectedToken(t)),
+        };
+
+        let alternative = match parser.iter.peek() {
+            Some(Token::Else) => {
+                parser.next_token_or_end()?;
+
+                // expect left brace after else keyword
+                match parser.next_token_or_end()? {
+                    Token::Lbrace => {}
+                    t => return Err(ParsingError::UnexpectedToken(t)),
+                };
+
+                let else_branch = parser.parse_block()?;
+
+                // expect right brace after block parsed
+                match parser.next_token_or_end()? {
+                    Token::Rbrace => {}
+                    t => return Err(ParsingError::UnexpectedToken(t)),
+                };
+
+                Some(else_branch)
+            }
+            _ => None,
+        };
+
+        Ok(Expression::If(
+            Box::new(condition),
+            consequence,
+            alternative,
+        ))
     }
 
     fn parse_prefix_expression(
@@ -286,7 +357,7 @@ impl<'a> Iterator for ParserIter<'a> {
             }
         }
         let token = self.iter.next()?;
-        let result = match token {
+        match token {
             Token::Let => {
                 let r = Some(self.parse_let());
                 self.skip_to_semicolon();
@@ -298,8 +369,7 @@ impl<'a> Iterator for ParserIter<'a> {
                 r
             }
             _ => Some(self.parse_expression_statement(&token)),
-        };
-        result
+        }
     }
 }
 

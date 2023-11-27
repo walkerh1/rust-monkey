@@ -5,6 +5,7 @@ use token::Token;
 mod tests;
 pub mod token;
 
+#[derive(Debug)]
 pub struct LexerIter<'a> {
     iter: Peekable<Chars<'a>>,
 }
