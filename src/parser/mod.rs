@@ -200,6 +200,7 @@ impl<'a> ParserIter<'a> {
             | Token::Gt
             | Token::Eq
             | Token::Noteq => Some(ParserIter::parse_infix_expression),
+            Token::Lparen => Some(ParserIter::parse_call_expression),
             _ => None,
         }
     }
@@ -304,8 +305,9 @@ impl<'a> ParserIter<'a> {
         let mut parameters = vec![];
 
         loop {
-            if let Token::Identifier(id) = self.next_token_or_end()? {
-                parameters.push(Expression::Identifier(id));
+            match self.next_token_or_end()? {
+                Token::Identifier(id) => parameters.push(Expression::Identifier(id)),
+                t => return Err(ParsingError::UnexpectedToken(t)),
             }
 
             match self.iter.peek() {
@@ -378,6 +380,39 @@ impl<'a> ParserIter<'a> {
             Box::new(right_expression),
         ))
     }
+
+    fn parse_call_expression(
+        parser: &mut ParserIter,
+        left_expression: Expression,
+        _: &Token,
+    ) -> Result<Expression, ParsingError> {
+        let mut arguments = vec![];
+
+        if let Some(Token::Rparen) = parser.iter.peek() {
+            parser.next_token_or_end()?;
+            return Ok(Expression::Call(Box::new(left_expression), arguments));
+        }
+
+        let next_token = parser.next_token_or_end()?;
+        arguments.push(parser.parse_expression(&next_token, Precedence::Lowest)?);
+
+        loop {
+            if let Some(Token::Comma) = parser.iter.peek() {
+                parser.next_token_or_end()?;
+                let next_token = parser.next_token_or_end()?;
+                arguments.push(parser.parse_expression(&next_token, Precedence::Lowest)?);
+            } else {
+                break;
+            }
+        }
+
+        match parser.next_token_or_end()? {
+            Token::Rparen => {}
+            token => return Err(ParsingError::UnexpectedToken(token)),
+        }
+
+        Ok(Expression::Call(Box::new(left_expression), arguments))
+    }
 }
 
 impl<'a> Iterator for ParserIter<'a> {
@@ -407,7 +442,13 @@ impl<'a> Iterator for ParserIter<'a> {
             _ => {
                 let t = token.clone();
                 self.iter.next()?;
-                Some(self.parse_expression_statement(&t))
+                match self.parse_expression_statement(&t) {
+                    Ok(s) => Some(Ok(s)),
+                    Err(e) => {
+                        self.skip_to_semicolon();
+                        Some(Err(e))
+                    }
+                }
             }
         }
     }

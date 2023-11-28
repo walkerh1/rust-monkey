@@ -522,18 +522,12 @@ fn test_expression_parse_error_if_invalid_prefix_placement() {
 
 #[test]
 fn test_adjacent_expressions_parse() {
-    let input = "4!4;5(5+3);";
+    let input = "4!4;";
     let expected = vec![
         Statement::Expression(Expression::Integer(4)),
         Statement::Expression(Expression::Prefix(
             Prefix::Bang,
             Box::new(Expression::Integer(4)),
-        )),
-        Statement::Expression(Expression::Integer(5)),
-        Statement::Expression(Expression::Infix(
-            Box::new(Expression::Integer(5)),
-            Infix::Plus,
-            Box::new(Expression::Integer(3)),
         )),
     ];
     let (ast_nodes, _) = collect_parsing_results(input);
@@ -673,10 +667,7 @@ fn test_if_expression_with_else() {
 #[test]
 fn test_if_expression_error_if_missing_brace() {
     let input = "if (x < y) { x  else { y }";
-    let expected_errors = vec![
-        ParsingError::InvalidPrefixOperator(Token::Else),
-        ParsingError::InvalidPrefixOperator(Token::Lbrace),
-    ];
+    let expected_errors = vec![ParsingError::InvalidPrefixOperator(Token::Else)];
     let (_, errors) = collect_parsing_results(input);
     assert_eq!(errors, expected_errors);
 }
@@ -703,6 +694,84 @@ fn test_function_literal() {
 fn test_function_literal_error_if_missing_brace() {
     let input = "fn(x, y) { x + y; ";
     let expected_errors = vec![ParsingError::UnexpectedEof];
+    let (_, errors) = collect_parsing_results(input);
+    assert_eq!(errors, expected_errors);
+}
+
+#[test]
+fn test_function_literal_error_if_misplaced_comma() {
+    let input = "fn(x, y,) { x + y }";
+    let expected_errors = vec![ParsingError::UnexpectedToken(Token::Rparen)];
+    let (_, errors) = collect_parsing_results(input);
+    assert_eq!(errors, expected_errors);
+}
+
+#[test]
+fn test_call_expression_basic() {
+    let input = "add(2, 3);";
+    let expected = vec![Statement::Expression(Expression::Call(
+        Box::new(Expression::Identifier(String::from("add"))),
+        vec![Expression::Integer(2), Expression::Integer(3)],
+    ))];
+    let (ast_nodes, _) = collect_parsing_results(input);
+    assert_eq!(ast_nodes, expected);
+}
+
+#[test]
+fn test_call_expression_no_arguments() {
+    let input = "add();";
+    let expected = vec![Statement::Expression(Expression::Call(
+        Box::new(Expression::Identifier(String::from("add"))),
+        vec![],
+    ))];
+    let (ast_nodes, _) = collect_parsing_results(input);
+    assert_eq!(ast_nodes, expected);
+}
+
+#[test]
+fn test_call_expression_one_arguments() {
+    let input = "add(1);";
+    let expected = vec![Statement::Expression(Expression::Call(
+        Box::new(Expression::Identifier(String::from("add"))),
+        vec![Expression::Integer(1)],
+    ))];
+    let (ast_nodes, _) = collect_parsing_results(input);
+    assert_eq!(ast_nodes, expected);
+}
+
+#[test]
+fn test_call_expression_inlined_function() {
+    let input = "fn(x, y) { x + y }(2, 3);";
+    let expected = vec![Statement::Expression(Expression::Call(
+        Box::new(Expression::Function(
+            vec![
+                Expression::Identifier(String::from("x")),
+                Expression::Identifier(String::from("y")),
+            ],
+            vec![Statement::Expression(Expression::Infix(
+                Box::new(Expression::Identifier(String::from("x"))),
+                Infix::Plus,
+                Box::new(Expression::Identifier(String::from("y"))),
+            ))],
+        )),
+        vec![Expression::Integer(2), Expression::Integer(3)],
+    ))];
+    let (ast_nodes, _) = collect_parsing_results(input);
+    assert_eq!(ast_nodes, expected);
+}
+
+#[test]
+fn test_call_expression_error_if_missing_paren() {
+    let input = "add(2, 3";
+    let expected_errors = vec![ParsingError::UnexpectedEof];
+    let (_, errors) = collect_parsing_results(input);
+    assert_eq!(errors, expected_errors);
+}
+
+#[test]
+fn test_call_expression_error_if_extra_comma() {
+    let input = "add(2, 3,)";
+    let expected_errors = vec![ParsingError::InvalidPrefixOperator(Token::Rparen)];
     let (_, errors) = collect_parsing_results(input);
     assert_eq!(errors, expected_errors);
 }

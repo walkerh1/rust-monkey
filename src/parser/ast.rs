@@ -20,6 +20,7 @@ pub enum Expression {
     Boolean(Boolean),
     If(Box<Expression>, Block, Option<Block>),
     Function(Vec<Expression>, Block),
+    Call(Box<Expression>, Vec<Expression>),
 }
 
 #[derive(Debug, PartialEq)]
