@@ -1,6 +1,6 @@
 use std::io::{self, Write};
 
-use crate::lexer::Lexer;
+use crate::parser::Parser;
 
 pub struct Repl;
 
@@ -23,9 +23,18 @@ impl Repl {
                 break;
             }
 
-            buffer.as_str().tokens().for_each(|token| {
-                writeln!(writer, "{:?}", token).expect("Failed to write to stdout")
-            })
+            let mut errors = vec![];
+            let nodes: Vec<_> = buffer
+                .as_str()
+                .ast_nodes()
+                .filter_map(|node| node.map_err(|e| errors.push(e)).ok())
+                .collect();
+
+            if errors.len() > 0 {
+                errors.iter().for_each(|e| println!("{e:?}"));
+            } else {
+                nodes.iter().for_each(|node| println!("{node:?}"));
+            }
         }
 
         Ok(())
