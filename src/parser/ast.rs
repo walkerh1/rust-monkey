@@ -19,6 +19,7 @@ pub enum Expression {
     Infix(Box<Expression>, Infix, Box<Expression>),
     Boolean(Boolean),
     If(Box<Expression>, Block, Option<Block>),
+    Function(Vec<Expression>, Block),
 }
 
 #[derive(Debug, PartialEq)]

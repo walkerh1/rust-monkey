@@ -157,7 +157,6 @@ foo
         Statement::Expression(Expression::Identifier(String::from("foo"))),
     ];
     let (ast_nodes, errors) = collect_parsing_results(input);
-    println!("{errors:?}");
     assert_eq!(ast_nodes, expected);
     assert_eq!(errors.len(), 0);
 }
@@ -270,8 +269,7 @@ fn test_infix_expressions() {
             Box::new(Expression::Integer(5)),
         )),
     ];
-    let (ast_nodes, errors) = collect_parsing_results(input);
-    println!("{errors:?}");
+    let (ast_nodes, _) = collect_parsing_results(input);
     assert_eq!(ast_nodes, expected);
 }
 
@@ -518,8 +516,7 @@ fn test_prefix_expression_parse_error_if_invalid_prefix() {
 fn test_expression_parse_error_if_invalid_prefix_placement() {
     let input = "6!";
     let expected_errors = vec![ParsingError::UnexpectedEof];
-    let (nodes, errors) = collect_parsing_results(input);
-    println!("{nodes:?}");
+    let (_, errors) = collect_parsing_results(input);
     assert_eq!(errors, expected_errors);
 }
 
@@ -669,8 +666,7 @@ fn test_if_expression_with_else() {
             String::from("y"),
         ))]),
     ))];
-    let (ast_nodes, errors) = collect_parsing_results(input);
-    println!("{errors:?}");
+    let (ast_nodes, _) = collect_parsing_results(input);
     assert_eq!(ast_nodes, expected);
 }
 
@@ -680,9 +676,33 @@ fn test_if_expression_error_if_missing_brace() {
     let expected_errors = vec![
         ParsingError::InvalidPrefixOperator(Token::Else),
         ParsingError::InvalidPrefixOperator(Token::Lbrace),
-        ParsingError::InvalidPrefixOperator(Token::Rbrace),
     ];
     let (_, errors) = collect_parsing_results(input);
     assert_eq!(errors, expected_errors);
 }
 
+#[test]
+fn test_function_literal() {
+    let input = "fn(x, y) { x + y; };";
+    let expected = vec![Statement::Expression(Expression::Function(
+        vec![
+            Expression::Identifier(String::from("x")),
+            Expression::Identifier(String::from("y")),
+        ],
+        vec![Statement::Expression(Expression::Infix(
+            Box::new(Expression::Identifier(String::from("x"))),
+            Infix::Plus,
+            Box::new(Expression::Identifier(String::from("y"))),
+        ))],
+    ))];
+    let (ast_nodes, _) = collect_parsing_results(input);
+    assert_eq!(ast_nodes, expected);
+}
+
+#[test]
+fn test_function_literal_error_if_missing_brace() {
+    let input = "fn(x, y) { x + y; ";
+    let expected_errors = vec![ParsingError::UnexpectedEof];
+    let (_, errors) = collect_parsing_results(input);
+    assert_eq!(errors, expected_errors);
+}

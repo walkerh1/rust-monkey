@@ -101,17 +101,29 @@ impl<'a> ParserIter<'a> {
     }
 
     fn parse_block(&mut self) -> Result<Block, ParsingError> {
+        // expect first token of block to be '{'
+        match self.next_token_or_end()? {
+            Token::Lbrace => {}
+            token => return Err(ParsingError::UnexpectedToken(token)),
+        }
+
         let mut block = vec![];
 
-        while let Some(next) = self.iter.peek() {
-            if *next != Token::Rbrace {
-                match self.next() {
-                    Some(res) => block.push(res?),
-                    None => return Err(ParsingError::UnexpectedEof),
-                };
-            } else {
+        loop {
+            if let Some(Token::Rbrace) = self.iter.peek() {
                 break;
             }
+
+            match self.next() {
+                Some(result) => block.push(result?),
+                None => break, // means a Rbrace was detected in self.next
+            }
+        }
+
+        // expect last token of block to be '}'
+        match self.next_token_or_end()? {
+            Token::Rbrace => {}
+            token => return Err(ParsingError::UnexpectedToken(token)),
         }
 
         Ok(block)
@@ -173,6 +185,7 @@ impl<'a> ParserIter<'a> {
             Token::True | Token::False => Ok(ParserIter::parse_boolean),
             Token::Lparen => Ok(ParserIter::parse_grouped_expression),
             Token::If => Ok(ParserIter::parse_if_expression),
+            Token::Function => Ok(ParserIter::parse_function_literal),
             _ => Err(ParsingError::InvalidPrefixOperator(token.clone())),
         }
     }
@@ -239,45 +252,22 @@ impl<'a> ParserIter<'a> {
     }
 
     fn parse_if_expression(parser: &mut ParserIter, _: &Token) -> Result<Expression, ParsingError> {
-        // expect a left paren after an if token
-        match parser.next_token_or_end()? {
-            Token::Lparen => {}
-            t => return Err(ParsingError::UnexpectedToken(t)),
-        }
-
-        let condition = parser.parse_expression(&Token::Lparen, Precedence::Lowest)?;
-
-        // expect left brace after condition parsed
-        match parser.next_token_or_end()? {
-            Token::Lbrace => {}
+        // get and expect next token to be '(' after 'if'
+        let token = match parser.next_token_or_end()? {
+            Token::Lparen => Token::Lparen,
             t => return Err(ParsingError::UnexpectedToken(t)),
         };
+
+        // expect grouped expression after 'if' token
+        let condition = parser.parse_expression(&token, Precedence::Lowest)?;
 
         let consequence = parser.parse_block()?;
-
-        // expect right brace after block parsed
-        match parser.next_token_or_end()? {
-            Token::Rbrace => {}
-            t => return Err(ParsingError::UnexpectedToken(t)),
-        };
 
         let alternative = match parser.iter.peek() {
             Some(Token::Else) => {
                 parser.next_token_or_end()?;
 
-                // expect left brace after else keyword
-                match parser.next_token_or_end()? {
-                    Token::Lbrace => {}
-                    t => return Err(ParsingError::UnexpectedToken(t)),
-                };
-
                 let else_branch = parser.parse_block()?;
-
-                // expect right brace after block parsed
-                match parser.next_token_or_end()? {
-                    Token::Rbrace => {}
-                    t => return Err(ParsingError::UnexpectedToken(t)),
-                };
 
                 Some(else_branch)
             }
@@ -289,6 +279,49 @@ impl<'a> ParserIter<'a> {
             consequence,
             alternative,
         ))
+    }
+
+    fn parse_function_literal(
+        parser: &mut ParserIter,
+        _: &Token,
+    ) -> Result<Expression, ParsingError> {
+        // expect parameter list after 'fn' keyword
+        let parameters = parser.parse_function_parameters()?;
+
+        // expect block statement after parameter list
+        let body = parser.parse_block()?;
+
+        Ok(Expression::Function(parameters, body))
+    }
+
+    fn parse_function_parameters(&mut self) -> Result<Vec<Expression>, ParsingError> {
+        // expect first token of parameter list to be '('
+        match self.next_token_or_end()? {
+            Token::Lparen => {}
+            token => return Err(ParsingError::UnexpectedToken(token)),
+        }
+
+        let mut parameters = vec![];
+
+        loop {
+            if let Token::Identifier(id) = self.next_token_or_end()? {
+                parameters.push(Expression::Identifier(id));
+            }
+
+            match self.iter.peek() {
+                Some(Token::Comma) => {
+                    self.next_token_or_end()?;
+                }
+                Some(Token::Rparen) => {
+                    self.next_token_or_end()?;
+                    break;
+                }
+                Some(t) => return Err(ParsingError::UnexpectedToken(t.clone())),
+                None => return Err(ParsingError::UnexpectedEof),
+            }
+        }
+
+        Ok(parameters)
     }
 
     fn parse_prefix_expression(
@@ -356,19 +389,26 @@ impl<'a> Iterator for ParserIter<'a> {
                 self.iter.next();
             }
         }
-        let token = self.iter.next()?;
+        let token = self.iter.peek()?;
         match token {
             Token::Let => {
+                self.iter.next()?;
                 let r = Some(self.parse_let());
                 self.skip_to_semicolon();
                 r
             }
             Token::Return => {
+                self.iter.next()?;
                 let r = Some(self.parse_return());
                 self.skip_to_semicolon();
                 r
             }
-            _ => Some(self.parse_expression_statement(&token)),
+            Token::Rbrace => None,
+            _ => {
+                let t = token.clone();
+                self.iter.next()?;
+                Some(self.parse_expression_statement(&t))
+            }
         }
     }
 }
