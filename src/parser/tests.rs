@@ -673,3 +673,16 @@ fn test_if_expression_with_else() {
     println!("{errors:?}");
     assert_eq!(ast_nodes, expected);
 }
+
+#[test]
+fn test_if_expression_error_if_missing_brace() {
+    let input = "if (x < y) { x  else { y }";
+    let expected_errors = vec![
+        ParsingError::InvalidPrefixOperator(Token::Else),
+        ParsingError::InvalidPrefixOperator(Token::Lbrace),
+        ParsingError::InvalidPrefixOperator(Token::Rbrace),
+    ];
+    let (_, errors) = collect_parsing_results(input);
+    assert_eq!(errors, expected_errors);
+}
+
