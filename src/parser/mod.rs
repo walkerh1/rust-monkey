@@ -3,38 +3,15 @@ use std::iter::Peekable;
 
 use self::ast::{Expression, Infix, Prefix, Statement};
 use crate::lexer::{token::Token, Lexer, LexerIter};
+use crate::parser::precedence::Precedence;
 
 pub mod ast;
+mod precedence;
 mod tests;
 
 type PrefixParseFn = fn(&mut ParserIter, &Token) -> Result<Expression, ParsingError>;
 type InfixParseFn = fn(&mut ParserIter, Expression, &Token) -> Result<Expression, ParsingError>;
 
-#[derive(PartialEq, Eq, PartialOrd, Ord)]
-enum Precedence {
-    Lowest = 0,
-    Equals,
-    LessGreater,
-    Sum,
-    Product,
-    Prefix,
-    Call,
-}
-
-impl Precedence {
-    fn get_precedence(token: &Token) -> Precedence {
-        match token {
-            Token::Eq | Token::Noteq => Precedence::Equals,
-            Token::Lt | Token::Gt => Precedence::LessGreater,
-            Token::Plus | Token::Minus => Precedence::Sum,
-            Token::Asterisk | Token::Slash => Precedence::Product,
-            Token::Lparen => Precedence::Call,
-            _ => Precedence::Lowest,
-        }
-    }
-}
-
-#[derive(Debug)]
 pub struct ParserIter<'a> {
     iter: Peekable<LexerIter<'a>>,
 }
