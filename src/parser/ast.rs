@@ -6,7 +6,7 @@ pub enum Node {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct Program(pub Vec<Node>);
+pub struct Program(pub Vec<Statement>);
 
 #[derive(Debug, PartialEq)]
 pub enum Statement {

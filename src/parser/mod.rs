@@ -3,20 +3,75 @@ use std::iter::Peekable;
 
 use self::ast::{Expression, Infix, Prefix, Statement};
 use crate::lexer::{token::Token, Lexer, LexerIter};
+use crate::parser::ast::Program;
 use crate::parser::precedence::Precedence;
 
 pub mod ast;
 mod precedence;
 mod tests;
 
-type PrefixParseFn = fn(&mut ParserIter, &Token) -> Result<Expression, ParsingError>;
-type InfixParseFn = fn(&mut ParserIter, Expression, &Token) -> Result<Expression, ParsingError>;
+type PrefixParseFn = fn(&mut Parser, &Token) -> Result<Expression, ParsingError>;
+type InfixParseFn = fn(&mut Parser, Expression, &Token) -> Result<Expression, ParsingError>;
 
-pub struct ParserIter<'a> {
+pub struct Parser<'a> {
     iter: Peekable<LexerIter<'a>>,
 }
 
-impl<'a> ParserIter<'a> {
+impl<'a> Parser<'a> {
+    pub fn parse_program(program: &str) -> Result<Program, Vec<ParsingError>> {
+        let mut parser = Parser {
+            iter: program.tokens().peekable(),
+        };
+
+        let mut program = vec![];
+        let mut errors = vec![];
+
+        loop {
+            let token = match parser.iter.peek() {
+                Some(Token::Semicolon) => {
+                    parser.iter.next();
+                    continue;
+                }
+                Some(tok) => tok.clone(),
+                None => break,
+            };
+
+            match parser.parse_statement(&token) {
+                Ok(statement) => program.push(statement),
+                Err(error) => errors.push(error),
+            }
+        }
+
+        if errors.len() > 0 {
+            Err(errors)
+        } else {
+            Ok(Program(program))
+        }
+    }
+
+    fn parse_statement(&mut self, token: &Token) -> Result<Statement, ParsingError> {
+        self.iter.next();
+        match token {
+            Token::Let => {
+                let r = self.parse_let();
+                self.skip_to_semicolon();
+                r
+            }
+            Token::Return => {
+                let r = self.parse_return();
+                self.skip_to_semicolon();
+                r
+            }
+            t => match self.parse_expression_statement(t) {
+                Ok(s) => Ok(s),
+                Err(e) => {
+                    self.skip_to_semicolon();
+                    Err(e)
+                }
+            },
+        }
+    }
+
     fn parse_let(&mut self) -> Result<Statement, ParsingError> {
         // after 'let' next token should be an identifier
         let identifier = Expression::Identifier(match self.next_token_or_end()? {
@@ -88,13 +143,20 @@ impl<'a> ParserIter<'a> {
         let mut block = vec![];
 
         loop {
-            if let Some(Token::Rbrace) = self.iter.peek() {
-                break;
-            }
+            let token = match self.iter.peek() {
+                Some(Token::Semicolon) => {
+                    self.iter.next();
+                    continue;
+                }
+                Some(tok) => tok.clone(),
+                None => return Err(ParsingError::UnexpectedEof),
+            };
 
-            match self.next() {
-                Some(result) => block.push(result?),
-                None => break, // means a Rbrace was detected in self.next
+            if token == Token::Rbrace {
+                break;
+            } else {
+                let result = self.parse_statement(&token)?;
+                block.push(result)
             }
         }
 
@@ -131,14 +193,14 @@ impl<'a> ParserIter<'a> {
         token: &Token,
         precedence: Precedence,
     ) -> Result<Expression, ParsingError> {
-        let prefix_fn = ParserIter::get_prefix_parse_fn(token)?;
+        let prefix_fn = Parser::get_prefix_parse_fn(token)?;
 
         let mut left_expression = prefix_fn(self, token)?;
 
         while let Some(right) = self.iter.peek() {
             if *right != Token::Semicolon {
                 if precedence < Precedence::get_precedence(right) {
-                    let infix_fn = match ParserIter::get_infix_parse_fn(right) {
+                    let infix_fn = match Parser::get_infix_parse_fn(right) {
                         Some(func) => func,
                         None => break,
                     };
@@ -157,13 +219,13 @@ impl<'a> ParserIter<'a> {
 
     fn get_prefix_parse_fn(token: &Token) -> Result<PrefixParseFn, ParsingError> {
         match token {
-            Token::Identifier(_) => Ok(ParserIter::parse_identifier),
-            Token::Int(_) => Ok(ParserIter::parse_integer),
-            Token::Bang | Token::Minus => Ok(ParserIter::parse_prefix_expression),
-            Token::True | Token::False => Ok(ParserIter::parse_boolean),
-            Token::Lparen => Ok(ParserIter::parse_grouped_expression),
-            Token::If => Ok(ParserIter::parse_if_expression),
-            Token::Function => Ok(ParserIter::parse_function_literal),
+            Token::Identifier(_) => Ok(Parser::parse_identifier),
+            Token::Int(_) => Ok(Parser::parse_integer),
+            Token::Bang | Token::Minus => Ok(Parser::parse_prefix_expression),
+            Token::True | Token::False => Ok(Parser::parse_boolean),
+            Token::Lparen => Ok(Parser::parse_grouped_expression),
+            Token::If => Ok(Parser::parse_if_expression),
+            Token::Function => Ok(Parser::parse_function_literal),
             _ => Err(ParsingError::InvalidPrefixOperator(token.clone())),
         }
     }
@@ -177,13 +239,13 @@ impl<'a> ParserIter<'a> {
             | Token::Lt
             | Token::Gt
             | Token::Eq
-            | Token::Noteq => Some(ParserIter::parse_infix_expression),
-            Token::Lparen => Some(ParserIter::parse_call_expression),
+            | Token::Noteq => Some(Parser::parse_infix_expression),
+            Token::Lparen => Some(Parser::parse_call_expression),
             _ => None,
         }
     }
 
-    fn parse_identifier(_: &mut ParserIter, token: &Token) -> Result<Expression, ParsingError> {
+    fn parse_identifier(_: &mut Parser, token: &Token) -> Result<Expression, ParsingError> {
         match token {
             Token::Identifier(val) => Ok(Expression::Identifier(val.clone())),
             _ => Err(ParsingError::Generic(String::from(
@@ -192,7 +254,7 @@ impl<'a> ParserIter<'a> {
         }
     }
 
-    fn parse_integer(_: &mut ParserIter, token: &Token) -> Result<Expression, ParsingError> {
+    fn parse_integer(_: &mut Parser, token: &Token) -> Result<Expression, ParsingError> {
         match token {
             Token::Int(int) => int
                 .parse::<i64>()
@@ -204,7 +266,7 @@ impl<'a> ParserIter<'a> {
         }
     }
 
-    fn parse_boolean(_: &mut ParserIter, token: &Token) -> Result<Expression, ParsingError> {
+    fn parse_boolean(_: &mut Parser, token: &Token) -> Result<Expression, ParsingError> {
         match token {
             Token::True => Ok(Expression::Boolean(true)),
             Token::False => Ok(Expression::Boolean(false)),
@@ -215,7 +277,7 @@ impl<'a> ParserIter<'a> {
     }
 
     fn parse_grouped_expression(
-        parser: &mut ParserIter,
+        parser: &mut Parser,
         _: &Token,
     ) -> Result<Expression, ParsingError> {
         let next_token = parser.next_token_or_end()?;
@@ -230,7 +292,7 @@ impl<'a> ParserIter<'a> {
         Ok(exp)
     }
 
-    fn parse_if_expression(parser: &mut ParserIter, _: &Token) -> Result<Expression, ParsingError> {
+    fn parse_if_expression(parser: &mut Parser, _: &Token) -> Result<Expression, ParsingError> {
         // get and expect next token to be '(' after 'if'
         let token = match parser.next_token_or_end()? {
             Token::Lparen => Token::Lparen,
@@ -258,10 +320,7 @@ impl<'a> ParserIter<'a> {
         ))
     }
 
-    fn parse_function_literal(
-        parser: &mut ParserIter,
-        _: &Token,
-    ) -> Result<Expression, ParsingError> {
+    fn parse_function_literal(parser: &mut Parser, _: &Token) -> Result<Expression, ParsingError> {
         // expect parameter list after 'fn' keyword
         let parameters = parser.parse_function_parameters()?;
 
@@ -303,7 +362,7 @@ impl<'a> ParserIter<'a> {
     }
 
     fn parse_prefix_expression(
-        parser: &mut ParserIter,
+        parser: &mut Parser,
         token: &Token,
     ) -> Result<Expression, ParsingError> {
         let prefix = match token {
@@ -324,7 +383,7 @@ impl<'a> ParserIter<'a> {
     }
 
     fn parse_infix_expression(
-        parser: &mut ParserIter,
+        parser: &mut Parser,
         left_expression: Expression,
         operator: &Token,
     ) -> Result<Expression, ParsingError> {
@@ -358,7 +417,7 @@ impl<'a> ParserIter<'a> {
     }
 
     fn parse_call_expression(
-        parser: &mut ParserIter,
+        parser: &mut Parser,
         left_expression: Expression,
         _: &Token,
     ) -> Result<Expression, ParsingError> {
@@ -388,57 +447,6 @@ impl<'a> ParserIter<'a> {
         }
 
         Ok(Expression::Call(Box::new(left_expression), arguments))
-    }
-}
-
-impl<'a> Iterator for ParserIter<'a> {
-    type Item = Result<Statement, ParsingError>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if let Some(token) = self.iter.peek() {
-            if *token == Token::Semicolon {
-                self.iter.next();
-            }
-        }
-        let token = self.iter.peek()?;
-        match token {
-            Token::Let => {
-                self.iter.next()?;
-                let r = Some(self.parse_let());
-                self.skip_to_semicolon();
-                r
-            }
-            Token::Return => {
-                self.iter.next()?;
-                let r = Some(self.parse_return());
-                self.skip_to_semicolon();
-                r
-            }
-            Token::Rbrace => None,
-            _ => {
-                let t = token.clone();
-                self.iter.next()?;
-                match self.parse_expression_statement(&t) {
-                    Ok(s) => Some(Ok(s)),
-                    Err(e) => {
-                        self.skip_to_semicolon();
-                        Some(Err(e))
-                    }
-                }
-            }
-        }
-    }
-}
-
-pub trait Parser {
-    fn ast_nodes(&self) -> ParserIter;
-}
-
-impl<L: ?Sized + Lexer> Parser for L {
-    fn ast_nodes(&self) -> ParserIter {
-        ParserIter {
-            iter: self.tokens().peekable(),
-        }
     }
 }
 
