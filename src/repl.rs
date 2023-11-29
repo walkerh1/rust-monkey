@@ -1,6 +1,6 @@
 use std::io::{self, Write};
 
-use crate::parser::Parser;
+use crate::parser::ParserOld;
 
 pub struct Repl;
 

@@ -1,6 +1,6 @@
 use crate::evaluator::object::Object;
-use crate::parser::ast::{ParsingError, Statement};
-use crate::parser::Parser;
+use crate::parser::ast::Statement;
+use crate::parser::{ParserOld, ParsingError};
 
 mod object;
 mod tests;

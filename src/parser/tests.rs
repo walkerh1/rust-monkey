@@ -1,14 +1,15 @@
 #![cfg(test)]
 
+use crate::parser::ParsingError;
 use crate::{
     lexer::token::Token,
     parser::{
-        ast::{Boolean, Expression, Prefix, Statement},
-        Parser,
+        ast::{Expression, Prefix, Statement},
+        ParserOld,
     },
 };
 
-use super::ast::{Infix, ParsingError};
+use super::ast::Infix;
 
 fn collect_parsing_results(input: &str) -> (Vec<Statement>, Vec<ParsingError>) {
     let mut errors = vec![];
@@ -551,13 +552,13 @@ fn test_boolean_expression() {
     let expected = vec![
         Statement::Let(
             Expression::Identifier(String::from("a")),
-            Expression::Boolean(Boolean::True),
+            Expression::Boolean(true),
         ),
-        Statement::Return(Expression::Boolean(Boolean::False)),
+        Statement::Return(Expression::Boolean(false)),
         Statement::Expression(Expression::Infix(
-            Box::new(Expression::Boolean(Boolean::True)),
+            Box::new(Expression::Boolean(true)),
             Infix::Equal,
-            Box::new(Expression::Boolean(Boolean::False)),
+            Box::new(Expression::Boolean(false)),
         )),
     ];
     let (ast_nodes, _) = collect_parsing_results(input);
@@ -574,7 +575,7 @@ fn test_operator_precedence_thirteen() {
             Box::new(Expression::Integer(5)),
         )),
         Infix::Equal,
-        Box::new(Expression::Boolean(Boolean::False)),
+        Box::new(Expression::Boolean(false)),
     ))];
     let (ast_nodes, _) = collect_parsing_results(input);
     assert_eq!(ast_nodes, expected);
@@ -617,9 +618,9 @@ fn test_precedence_promotion_with_parentheses_three() {
     let expected = vec![Statement::Expression(Expression::Prefix(
         Prefix::Bang,
         Box::new(Expression::Infix(
-            Box::new(Expression::Boolean(Boolean::True)),
+            Box::new(Expression::Boolean(true)),
             Infix::Equal,
-            Box::new(Expression::Boolean(Boolean::False)),
+            Box::new(Expression::Boolean(false)),
         )),
     ))];
     let (ast_nodes, _) = collect_parsing_results(input);

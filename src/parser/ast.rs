@@ -1,6 +1,12 @@
-use std::fmt::{Display, Formatter};
+#[derive(Debug, PartialEq)]
+pub enum Node {
+    Program(Program),
+    Statement(Statement),
+    Expression(Expression),
+}
 
-use crate::lexer::token::Token;
+#[derive(Debug, PartialEq)]
+pub struct Program(pub Vec<Node>);
 
 #[derive(Debug, PartialEq)]
 pub enum Statement {
@@ -16,7 +22,7 @@ pub enum Expression {
     Integer(i64),
     Prefix(Prefix, Box<Expression>),
     Infix(Box<Expression>, Infix, Box<Expression>),
-    Boolean(Boolean),
+    Boolean(bool),
     If(Box<Expression>, Box<Statement>, Option<Box<Statement>>),
     Function(Vec<Expression>, Box<Statement>),
     Call(Box<Expression>, Vec<Expression>),
@@ -26,19 +32,6 @@ pub enum Expression {
 pub enum Prefix {
     Minus,
     Bang,
-}
-
-impl Display for Prefix {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                Prefix::Minus => "-",
-                Prefix::Bang => "!",
-            }
-        )
-    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -51,71 +44,4 @@ pub enum Infix {
     LessThan,
     Equal,
     NotEqual,
-}
-
-impl Display for Infix {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                Infix::Plus => "+",
-                Infix::Minus => "-",
-                Infix::Multiply => "*",
-                Infix::Divide => "/",
-                Infix::GreaterThan => ">",
-                Infix::LessThan => "<",
-                Infix::Equal => "==",
-                Infix::NotEqual => "!=",
-            }
-        )
-    }
-}
-
-#[derive(Debug, PartialEq)]
-pub enum Boolean {
-    True,
-    False,
-}
-
-impl Display for Boolean {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                Boolean::True => "true",
-                Boolean::False => "false",
-            }
-        )
-    }
-}
-
-#[derive(Debug, PartialEq)]
-pub enum ParsingError {
-    UnexpectedToken(Token),
-    UnexpectedEof,
-    UnexpectedSemicolon,
-    InvalidPrefixOperator(Token),
-    InvalidInteger(String),
-    Generic(String),
-}
-
-impl Display for ParsingError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                ParsingError::UnexpectedToken(token) => format!("Unexpected token: '{token}'"),
-                ParsingError::UnexpectedEof => "Unexpected EOF".to_string(),
-                ParsingError::UnexpectedSemicolon => "Unexpected end of statement: ';'".to_string(),
-                ParsingError::InvalidPrefixOperator(token) =>
-                    format!("'{token}' is not a valid prefix operator"),
-                ParsingError::InvalidInteger(string) =>
-                    format!("Cannot parse '{}' as a valid integer", *string),
-                ParsingError::Generic(string) => string.to_string(),
-            }
-        )
-    }
 }

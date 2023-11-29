@@ -1,37 +1,95 @@
+use core::slice::Iter;
+use std::fmt::{Display, Formatter};
 use std::iter::Peekable;
 
-use self::ast::{Boolean, Expression, Infix, ParsingError, Prefix, Statement};
+use self::ast::{Expression, Infix, Prefix, Statement};
 use crate::lexer::{token::Token, Lexer, LexerIter};
+use crate::parser::ast::{Node, Program};
+use crate::parser::precedence::Precedence;
 
 pub mod ast;
+mod precedence;
 mod tests;
 
-type PrefixParseFn = fn(&mut ParserIter, &Token) -> Result<Expression, ParsingError>;
-type InfixParseFn = fn(&mut ParserIter, Expression, &Token) -> Result<Expression, ParsingError>;
-
-#[derive(PartialEq, Eq, PartialOrd, Ord)]
-enum Precedence {
-    Lowest = 0,
-    Equals,
-    LessGreater,
-    Sum,
-    Product,
-    Prefix,
-    Call,
+pub struct Parser<'a> {
+    tokens: Peekable<LexerIter<'a>>,
+    curr_token: Token,
+    pub errors: Vec<ParsingError>,
 }
 
-impl Precedence {
-    fn get_precedence(token: &Token) -> Precedence {
-        match token {
-            Token::Eq | Token::Noteq => Precedence::Equals,
-            Token::Lt | Token::Gt => Precedence::LessGreater,
-            Token::Plus | Token::Minus => Precedence::Sum,
-            Token::Asterisk | Token::Slash => Precedence::Product,
-            Token::Lparen => Precedence::Call,
-            _ => Precedence::Lowest,
+impl<'a> Parser<'a> {
+    pub fn new(lexer: LexerIter<'a>) -> Parser {
+        let mut parser = Parser {
+            tokens: lexer.peekable(),
+            curr_token: Token::Eof,
+            errors: vec![],
+        };
+        parser.advance_token();
+        parser
+    }
+
+    pub fn parse_program(&mut self) -> Result<Node, ParsingError> {
+        let mut nodes = vec![];
+        while self.curr_token != Token::Eof {
+            nodes.push(self.parse_statement()?);
+            self.advance_token();
+        }
+        Ok(Node::Program(Program(nodes)))
+    }
+
+    fn parse_statement(&mut self) -> Result<Node, ParsingError> {
+        match &self.curr_token {
+            Token::Let => self.parse_let_statement(),
+            token => Err(ParsingError::UnexpectedToken(token.clone())),
+        }
+    }
+
+    fn parse_let_statement(&mut self) -> Result<Node, ParsingError> {
+        self.advance_token();
+        let identifier = self.parse_identifier()?;
+
+        self.advance_token();
+        match &self.curr_token {
+            Token::Assign => {}
+            token => return Err(ParsingError::UnexpectedToken(token.clone())),
+        };
+
+        todo!()
+    }
+
+    fn parse_identifier(&mut self) -> Result<Node, ParsingError> {
+        Ok(Node::Expression(Expression::Identifier(
+            match &self.curr_token {
+                Token::Identifier(id) => id.clone(),
+                token => return Err(ParsingError::UnexpectedToken(token.clone())),
+            },
+        )))
+    }
+
+    fn advance_token(&mut self) {
+        self.curr_token = match self.tokens.next() {
+            Some(token) => token,
+            None => Token::Eof,
+        };
+    }
+
+    fn advance_if_next_token_is(&mut self, expected: Token) -> Result<(), ParsingError> {
+        match self.tokens.peek() {
+            Some(received) => {
+                if *received == expected {
+                    self.advance_token();
+                    Ok(())
+                } else {
+                    Err(ParsingError::UnexpectedToken(received.clone()))
+                }
+            }
+            None => Err(ParsingError::UnexpectedEof),
         }
     }
 }
+
+type PrefixParseFn = fn(&mut ParserIter, &Token) -> Result<Expression, ParsingError>;
+type InfixParseFn = fn(&mut ParserIter, Expression, &Token) -> Result<Expression, ParsingError>;
 
 #[derive(Debug)]
 pub struct ParserIter<'a> {
@@ -228,8 +286,8 @@ impl<'a> ParserIter<'a> {
 
     fn parse_boolean(_: &mut ParserIter, token: &Token) -> Result<Expression, ParsingError> {
         match token {
-            Token::True => Ok(Expression::Boolean(Boolean::True)),
-            Token::False => Ok(Expression::Boolean(Boolean::False)),
+            Token::True => Ok(Expression::Boolean(true)),
+            Token::False => Ok(Expression::Boolean(false)),
             _ => Err(ParsingError::Generic(String::from(
                 "should never get here... fix types",
             ))),
@@ -452,14 +510,43 @@ impl<'a> Iterator for ParserIter<'a> {
     }
 }
 
-pub trait Parser {
+pub trait ParserOld {
     fn ast_nodes(&self) -> ParserIter;
 }
 
-impl<L: ?Sized + Lexer> Parser for L {
+impl<L: ?Sized + Lexer> ParserOld for L {
     fn ast_nodes(&self) -> ParserIter {
         ParserIter {
             iter: self.tokens().peekable(),
         }
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub enum ParsingError {
+    UnexpectedToken(Token),
+    UnexpectedEof,
+    UnexpectedSemicolon,
+    InvalidPrefixOperator(Token),
+    InvalidInteger(String),
+    Generic(String),
+}
+
+impl Display for ParsingError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                ParsingError::UnexpectedToken(token) => format!("Unexpected token: '{token}'"),
+                ParsingError::UnexpectedEof => "Unexpected EOF".to_string(),
+                ParsingError::UnexpectedSemicolon => "Unexpected end of statement: ';'".to_string(),
+                ParsingError::InvalidPrefixOperator(token) =>
+                    format!("'{token}' is not a valid prefix operator"),
+                ParsingError::InvalidInteger(string) =>
+                    format!("Cannot parse '{}' as a valid integer", *string),
+                ParsingError::Generic(string) => string.to_string(),
+            }
+        )
     }
 }
