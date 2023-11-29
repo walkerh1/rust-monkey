@@ -1,5 +1,5 @@
-use crate::parser::ast::Program;
-use crate::parser::{Parser, ParsingError};
+use crate::evaluator::eval;
+use crate::parser::Parser;
 use std::io::{self, Write};
 
 pub struct Repl;
@@ -23,10 +23,19 @@ impl Repl {
                 break;
             }
 
-            let result = Parser::parse_program(buffer.as_str());
-            match result {
-                Ok(nodes) => println!("{nodes:?}"),
-                Err(errors) => errors.iter().for_each(|e| println!("{e:?}")),
+            let parsing_result = Parser::parse_program(buffer.as_str());
+            let program = match parsing_result {
+                Ok(program) => program,
+                Err(errors) => {
+                    errors.iter().for_each(|e| println!("{e:?}"));
+                    continue;
+                }
+            };
+
+            let eval_result = eval(program);
+            match eval_result {
+                Ok(object) => println!("{object}"),
+                Err(error) => println!("{error:?}"),
             }
         }
 

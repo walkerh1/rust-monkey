@@ -130,7 +130,7 @@ impl<'a> Parser<'a> {
         Ok(Statement::Expression(expression))
     }
 
-    fn parse_block(&mut self) -> Result<Statement, ParsingError> {
+    fn parse_block_statement(&mut self) -> Result<Statement, ParsingError> {
         // expect first token of block to be '{'
         match self.next_token_or_end()? {
             Token::Lbrace => {}
@@ -166,7 +166,6 @@ impl<'a> Parser<'a> {
         Ok(Statement::BlockStatement(block))
     }
 
-    // only advances iterator when next token is not ';' and not EOF
     fn next_token_or_end(&mut self) -> Result<Token, ParsingError> {
         match self.iter.peek() {
             Some(Token::Semicolon) => Err(ParsingError::UnexpectedSemicolon),
@@ -192,10 +191,11 @@ impl<'a> Parser<'a> {
     ) -> Result<Expression, ParsingError> {
         // prefix parse functions
         let mut left_expression = match token {
-            Token::Identifier(_) => Self::parse_identifier(&token),
-            Token::Int(_) => Self::parse_integer(&token),
+            Token::Identifier(id) => Self::parse_identifier(id),
+            Token::Int(int) => Self::parse_integer(int),
             Token::Bang | Token::Minus => self.parse_prefix_expression(&token),
-            Token::True | Token::False => Parser::parse_boolean(&token),
+            Token::True => Parser::parse_boolean(true),
+            Token::False => Parser::parse_boolean(false),
             Token::Lparen => self.parse_grouped_expression(),
             Token::If => self.parse_if_expression(),
             Token::Function => self.parse_function_literal(),
@@ -231,35 +231,18 @@ impl<'a> Parser<'a> {
         Ok(left_expression)
     }
 
-    fn parse_identifier(token: &Token) -> Result<Expression, ParsingError> {
-        match token {
-            Token::Identifier(val) => Ok(Expression::Identifier(val.clone())),
-            _ => Err(ParsingError::Generic(String::from(
-                "should never get here... as function is only called on identifer token",
-            ))),
-        }
+    fn parse_identifier(id: &str) -> Result<Expression, ParsingError> {
+        Ok(Expression::Identifier(id.to_string()))
     }
 
-    fn parse_integer(token: &Token) -> Result<Expression, ParsingError> {
-        match token {
-            Token::Int(int) => int
-                .parse::<i64>()
-                .map(Expression::Integer)
-                .map_err(|_| ParsingError::InvalidInteger(int.clone())),
-            _ => Err(ParsingError::Generic(String::from(
-                "should never get here... fix types",
-            ))),
-        }
+    fn parse_integer(int: &str) -> Result<Expression, ParsingError> {
+        int.parse::<i64>()
+            .map(Expression::Integer)
+            .map_err(|_| ParsingError::InvalidInteger(int.to_string()))
     }
 
-    fn parse_boolean(token: &Token) -> Result<Expression, ParsingError> {
-        match token {
-            Token::True => Ok(Expression::Boolean(true)),
-            Token::False => Ok(Expression::Boolean(false)),
-            _ => Err(ParsingError::Generic(String::from(
-                "should never get here... fix types",
-            ))),
-        }
+    fn parse_boolean(val: bool) -> Result<Expression, ParsingError> {
+        Ok(Expression::Boolean(val))
     }
 
     fn parse_grouped_expression(&mut self) -> Result<Expression, ParsingError> {
@@ -285,13 +268,13 @@ impl<'a> Parser<'a> {
         // expect grouped expression after 'if' token
         let condition = self.parse_expression(&token, Precedence::Lowest)?;
 
-        let consequence = Box::new(self.parse_block()?);
+        let consequence = Box::new(self.parse_block_statement()?);
 
         let alternative = match self.iter.peek() {
             Some(Token::Else) => {
                 self.next_token_or_end()?;
 
-                Some(Box::new(self.parse_block()?))
+                Some(Box::new(self.parse_block_statement()?))
             }
             _ => None,
         };
@@ -308,7 +291,7 @@ impl<'a> Parser<'a> {
         let parameters = self.parse_function_parameters()?;
 
         // expect block statement after parameter list
-        let body = Box::new(self.parse_block()?);
+        let body = Box::new(self.parse_block_statement()?);
 
         Ok(Expression::Function(parameters, body))
     }

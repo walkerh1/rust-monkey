@@ -5,7 +5,6 @@ use crate::{
     lexer::token::Token,
     parser::ast::{Expression, Statement},
 };
-use std::arch::aarch64::{veor_s8, vrecpe_f32};
 
 use super::ast::{Infix, Prefix, Program};
 

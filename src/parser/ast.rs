@@ -1,11 +1,4 @@
 #[derive(Debug, PartialEq)]
-pub enum Node {
-    Program(Program),
-    Statement(Statement),
-    Expression(Expression),
-}
-
-#[derive(Debug, PartialEq)]
 pub struct Program(pub Vec<Statement>);
 
 #[derive(Debug, PartialEq)]
