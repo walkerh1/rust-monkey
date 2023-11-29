@@ -1,6 +1,7 @@
+use std::fmt::Formatter;
 use std::iter::Peekable;
 
-use self::ast::{Boolean, Expression, Infix, ParsingError, Prefix, Statement};
+use self::ast::{Expression, Infix, Prefix, Statement};
 use crate::lexer::{token::Token, Lexer, LexerIter};
 
 pub mod ast;
@@ -228,8 +229,8 @@ impl<'a> ParserIter<'a> {
 
     fn parse_boolean(_: &mut ParserIter, token: &Token) -> Result<Expression, ParsingError> {
         match token {
-            Token::True => Ok(Expression::Boolean(Boolean::True)),
-            Token::False => Ok(Expression::Boolean(Boolean::False)),
+            Token::True => Ok(Expression::Boolean(true)),
+            Token::False => Ok(Expression::Boolean(false)),
             _ => Err(ParsingError::Generic(String::from(
                 "should never get here... fix types",
             ))),
@@ -461,5 +462,34 @@ impl<L: ?Sized + Lexer> Parser for L {
         ParserIter {
             iter: self.tokens().peekable(),
         }
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub enum ParsingError {
+    UnexpectedToken(Token),
+    UnexpectedEof,
+    UnexpectedSemicolon,
+    InvalidPrefixOperator(Token),
+    InvalidInteger(String),
+    Generic(String),
+}
+
+impl std::fmt::Display for ParsingError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                ParsingError::UnexpectedToken(token) => format!("Unexpected token: '{token}'"),
+                ParsingError::UnexpectedEof => "Unexpected EOF".to_string(),
+                ParsingError::UnexpectedSemicolon => "Unexpected end of statement: ';'".to_string(),
+                ParsingError::InvalidPrefixOperator(token) =>
+                    format!("'{token}' is not a valid prefix operator"),
+                ParsingError::InvalidInteger(string) =>
+                    format!("Cannot parse '{}' as a valid integer", *string),
+                ParsingError::Generic(string) => string.to_string(),
+            }
+        )
     }
 }
