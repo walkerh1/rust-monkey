@@ -635,9 +635,9 @@ fn test_if_expression() {
             Infix::LessThan,
             Box::new(Expression::Identifier(String::from("y"))),
         )),
-        vec![Statement::Expression(Expression::Identifier(String::from(
-            "x",
-        )))],
+        Box::new(Statement::BlockStatement(vec![Statement::Expression(
+            Expression::Identifier(String::from("x")),
+        )])),
         None,
     ))];
     let (ast_nodes, _) = collect_parsing_results(input);
@@ -653,12 +653,12 @@ fn test_if_expression_with_else() {
             Infix::LessThan,
             Box::new(Expression::Identifier(String::from("y"))),
         )),
-        vec![Statement::Expression(Expression::Identifier(String::from(
-            "x",
-        )))],
-        Some(vec![Statement::Expression(Expression::Identifier(
-            String::from("y"),
-        ))]),
+        Box::new(Statement::BlockStatement(vec![Statement::Expression(
+            Expression::Identifier(String::from("x")),
+        )])),
+        Some(Box::new(Statement::BlockStatement(vec![
+            Statement::Expression(Expression::Identifier(String::from("y"))),
+        ]))),
     ))];
     let (ast_nodes, _) = collect_parsing_results(input);
     assert_eq!(ast_nodes, expected);
@@ -680,11 +680,13 @@ fn test_function_literal() {
             Expression::Identifier(String::from("x")),
             Expression::Identifier(String::from("y")),
         ],
-        vec![Statement::Expression(Expression::Infix(
-            Box::new(Expression::Identifier(String::from("x"))),
-            Infix::Plus,
-            Box::new(Expression::Identifier(String::from("y"))),
-        ))],
+        Box::new(Statement::BlockStatement(vec![Statement::Expression(
+            Expression::Infix(
+                Box::new(Expression::Identifier(String::from("x"))),
+                Infix::Plus,
+                Box::new(Expression::Identifier(String::from("y"))),
+            ),
+        )])),
     ))];
     let (ast_nodes, _) = collect_parsing_results(input);
     assert_eq!(ast_nodes, expected);
@@ -748,11 +750,13 @@ fn test_call_expression_inlined_function() {
                 Expression::Identifier(String::from("x")),
                 Expression::Identifier(String::from("y")),
             ],
-            vec![Statement::Expression(Expression::Infix(
-                Box::new(Expression::Identifier(String::from("x"))),
-                Infix::Plus,
-                Box::new(Expression::Identifier(String::from("y"))),
-            ))],
+            Box::new(Statement::BlockStatement(vec![Statement::Expression(
+                Expression::Infix(
+                    Box::new(Expression::Identifier(String::from("x"))),
+                    Infix::Plus,
+                    Box::new(Expression::Identifier(String::from("y"))),
+                ),
+            )])),
         )),
         vec![Expression::Integer(2), Expression::Integer(3)],
     ))];

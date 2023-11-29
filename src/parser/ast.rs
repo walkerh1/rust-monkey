@@ -7,9 +7,8 @@ pub enum Statement {
     Let(Expression, Expression),
     Return(Expression),
     Expression(Expression),
+    BlockStatement(Vec<Statement>),
 }
-
-pub type Block = Vec<Statement>;
 
 #[derive(Debug, PartialEq)]
 pub enum Expression {
@@ -18,8 +17,8 @@ pub enum Expression {
     Prefix(Prefix, Box<Expression>),
     Infix(Box<Expression>, Infix, Box<Expression>),
     Boolean(Boolean),
-    If(Box<Expression>, Block, Option<Block>),
-    Function(Vec<Expression>, Block),
+    If(Box<Expression>, Box<Statement>, Option<Box<Statement>>),
+    Function(Vec<Expression>, Box<Statement>),
     Call(Box<Expression>, Vec<Expression>),
 }
 

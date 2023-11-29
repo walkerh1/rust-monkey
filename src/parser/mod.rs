@@ -1,9 +1,9 @@
 use std::iter::Peekable;
 
-use self::ast::{Block, Boolean, Expression, Infix, ParsingError, Prefix, Statement};
+use self::ast::{Boolean, Expression, Infix, ParsingError, Prefix, Statement};
 use crate::lexer::{token::Token, Lexer, LexerIter};
 
-mod ast;
+pub mod ast;
 mod tests;
 
 type PrefixParseFn = fn(&mut ParserIter, &Token) -> Result<Expression, ParsingError>;
@@ -100,7 +100,7 @@ impl<'a> ParserIter<'a> {
         Ok(Statement::Expression(expression))
     }
 
-    fn parse_block(&mut self) -> Result<Block, ParsingError> {
+    fn parse_block(&mut self) -> Result<Statement, ParsingError> {
         // expect first token of block to be '{'
         match self.next_token_or_end()? {
             Token::Lbrace => {}
@@ -126,7 +126,7 @@ impl<'a> ParserIter<'a> {
             token => return Err(ParsingError::UnexpectedToken(token)),
         }
 
-        Ok(block)
+        Ok(Statement::BlockStatement(block))
     }
 
     // only advances iterator when next token is not ';' and not EOF
@@ -262,15 +262,13 @@ impl<'a> ParserIter<'a> {
         // expect grouped expression after 'if' token
         let condition = parser.parse_expression(&token, Precedence::Lowest)?;
 
-        let consequence = parser.parse_block()?;
+        let consequence = Box::new(parser.parse_block()?);
 
         let alternative = match parser.iter.peek() {
             Some(Token::Else) => {
                 parser.next_token_or_end()?;
 
-                let else_branch = parser.parse_block()?;
-
-                Some(else_branch)
+                Some(Box::new(parser.parse_block()?))
             }
             _ => None,
         };
@@ -290,7 +288,7 @@ impl<'a> ParserIter<'a> {
         let parameters = parser.parse_function_parameters()?;
 
         // expect block statement after parameter list
-        let body = parser.parse_block()?;
+        let body = Box::new(parser.parse_block()?);
 
         Ok(Expression::Function(parameters, body))
     }
