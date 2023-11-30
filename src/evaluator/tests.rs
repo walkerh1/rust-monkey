@@ -233,3 +233,57 @@ fn test_eval_if_expression_six() {
     let result = parse_and_eval(input).ok().unwrap();
     assert_eq!(result, expected);
 }
+
+#[test]
+fn test_return_statement_one() {
+    let input = "return 10;";
+    let expected = Object::Integer(10);
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_return_statement_two() {
+    let input = "return 10; 9";
+    let expected = Object::Integer(10);
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_return_statement_three() {
+    let input = "2 + 5; return 10; 9";
+    let expected = Object::Integer(10);
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_return_statement_four() {
+    let input = "
+if (10 > 1) {
+    if (10 > 1) {
+        return 10;
+    }
+    return 1;
+}";
+    let expected = Object::Integer(10);
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_return_statement_five() {
+    let input = "
+if (10 > 1) {
+    if (10 > 1) {
+        if (10 > 1) {
+            return 10;
+        }
+    }
+    return 1;
+}";
+    let expected = Object::Integer(10);
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}

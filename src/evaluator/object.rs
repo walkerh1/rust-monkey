@@ -5,6 +5,7 @@ pub enum Object {
     Null,
     Integer(i64),
     Boolean(bool),
+    Return(Box<Object>),
 }
 
 impl Display for Object {
@@ -16,6 +17,7 @@ impl Display for Object {
                 Object::Null => "Null".to_string(),
                 Object::Integer(int) => int.to_string(),
                 Object::Boolean(bool) => bool.to_string(),
+                Object::Return(object) => object.to_string(),
             }
         )
     }

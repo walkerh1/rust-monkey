@@ -39,7 +39,7 @@ impl<'a> Parser<'a> {
             }
         }
 
-        if errors.len() > 0 {
+        if !errors.is_empty() {
             Err(errors)
         } else {
             Ok(Program(program))
@@ -193,7 +193,7 @@ impl<'a> Parser<'a> {
         let mut left_expression = match token {
             Token::Identifier(id) => Self::parse_identifier(id),
             Token::Int(int) => Self::parse_integer(int),
-            Token::Bang | Token::Minus => self.parse_prefix_expression(&token),
+            Token::Bang | Token::Minus => self.parse_prefix_expression(token),
             Token::True => Parser::parse_boolean(true),
             Token::False => Parser::parse_boolean(false),
             Token::Lparen => self.parse_grouped_expression(),
@@ -394,14 +394,10 @@ impl<'a> Parser<'a> {
         let next_token = self.next_token_or_end()?;
         arguments.push(self.parse_expression(&next_token, Precedence::Lowest)?);
 
-        loop {
-            if let Some(Token::Comma) = self.iter.peek() {
-                self.next_token_or_end()?;
-                let next_token = self.next_token_or_end()?;
-                arguments.push(self.parse_expression(&next_token, Precedence::Lowest)?);
-            } else {
-                break;
-            }
+        while let Some(Token::Comma) = self.iter.peek() {
+            self.next_token_or_end()?;
+            let next_token = self.next_token_or_end()?;
+            arguments.push(self.parse_expression(&next_token, Precedence::Lowest)?);
         }
 
         match self.next_token_or_end()? {

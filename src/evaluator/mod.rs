@@ -9,11 +9,14 @@ pub fn eval(program: Program) -> Result<Object, EvalError> {
     eval_statements(&statements)
 }
 
-fn eval_statements(statements: &Vec<Statement>) -> Result<Object, EvalError> {
+fn eval_statements(statements: &[Statement]) -> Result<Object, EvalError> {
     let mut result = Object::Null;
 
     for statement in statements.iter() {
-        result = eval_statement(statement)?
+        result = match eval_statement(statement)? {
+            Object::Return(object) => return Ok(*object),
+            object => object,
+        }
     }
 
     Ok(result)
@@ -22,14 +25,27 @@ fn eval_statements(statements: &Vec<Statement>) -> Result<Object, EvalError> {
 fn eval_statement(statement: &Statement) -> Result<Object, EvalError> {
     Ok(match statement {
         Statement::Let(_, _) => todo!(),
-        Statement::Return(_) => todo!(),
+        Statement::Return(exp) => Object::Return(Box::new(eval_expression(exp)?)),
         Statement::Expression(exp) => eval_expression(exp)?,
-        Statement::BlockStatement(stats) => eval_statements(stats)?,
+        Statement::BlockStatement(stats) => eval_block_statement(stats)?,
     })
 }
 
+fn eval_block_statement(statements: &[Statement]) -> Result<Object, EvalError> {
+    let mut result = Object::Null;
+
+    for statement in statements.iter() {
+        result = eval_statement(statement)?;
+        if let Object::Return(_) = result {
+            break;
+        }
+    }
+
+    Ok(result)
+}
+
 fn eval_expression(expression: &Expression) -> Result<Object, EvalError> {
-    let result = match expression {
+    match expression {
         Expression::Identifier(_) => todo!(),
         Expression::Integer(int) => Ok(Object::Integer(*int)),
         Expression::Prefix(operator, operand) => eval_prefix_expressions(operator, operand),
@@ -40,9 +56,7 @@ fn eval_expression(expression: &Expression) -> Result<Object, EvalError> {
         }
         Expression::Function(_, _) => todo!(),
         Expression::Call(_, _) => todo!(),
-    };
-
-    result
+    }
 }
 
 fn eval_if_expression(
@@ -62,10 +76,10 @@ fn eval_if_expression(
 }
 
 fn is_truthy(object: &Object) -> bool {
-    match object {
-        Object::Boolean(false) | Object::Integer(0) | Object::Null => false,
-        _ => true,
-    }
+    !matches!(
+        object,
+        Object::Boolean(false) | Object::Integer(0) | Object::Null
+    )
 }
 
 fn eval_infix_expression(
@@ -115,7 +129,7 @@ fn eval_prefix_expressions(operator: &Prefix, operand: &Expression) -> Result<Ob
 fn eval_minus_operator_expression(object: &Object) -> Result<Object, EvalError> {
     match object {
         Object::Integer(int) => Ok(Object::Integer(-int)),
-        _ => return Err(EvalError::UnknownOperator),
+        _ => Err(EvalError::UnknownOperator),
     }
 }
 
@@ -123,8 +137,9 @@ fn eval_bang_operator_expression(object: &Object) -> Object {
     // false, Null, and 0 are falsy; everything else is truthy
     match object {
         Object::Null => Object::Boolean(true),
-        Object::Integer(int) => Object::Boolean(if *int == 0 { true } else { false }),
+        Object::Integer(int) => Object::Boolean(*int == 0),
         Object::Boolean(val) => Object::Boolean(!val),
+        _ => Object::Boolean(false),
     }
 }
 
