@@ -1,6 +1,7 @@
 use crate::evaluator::eval;
 use crate::parser::Parser;
 use std::io::{self, Write};
+use crate::evaluator::environment::Environment;
 
 pub struct Repl;
 
@@ -32,7 +33,9 @@ impl Repl {
                 }
             };
 
-            let eval_result = eval(program);
+            let mut env = Environment::new();
+
+            let eval_result = eval(program, &mut env);
             match eval_result {
                 Ok(object) => println!("{object}"),
                 Err(error) => println!("{error:?}"),

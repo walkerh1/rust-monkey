@@ -2,12 +2,14 @@
 
 use crate::evaluator::object::Object;
 use crate::evaluator::{eval, EvalError};
+use crate::evaluator::environment::Environment;
 use crate::parser::Parser;
 
 fn parse_and_eval(input: &str) -> Result<Object, EvalError> {
     // assume only parsabale strings are provided
     let program = Parser::parse_program(input).unwrap();
-    eval(program)
+    let mut env = Environment::new();
+    eval(program, &mut env)
 }
 
 #[test]
@@ -286,4 +288,44 @@ if (10 > 1) {
     let expected = Object::Integer(10);
     let result = parse_and_eval(input).ok().unwrap();
     assert_eq!(result, expected);
+}
+
+#[test]
+fn test_eval_let_statement_binding_one() {
+    let input = "let a = 5; a;";
+    let expected = Object::Integer(5);
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_eval_let_statement_binding_two() {
+    let input = "let a = 2 * 5; a;";
+    let expected = Object::Integer(10);
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_eval_let_statement_binding_three() {
+    let input = "let a = 5; let b = a; b;";
+    let expected = Object::Integer(5);
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_eval_let_statement_binding_four() {
+    let input = "let a = 5; let b = a; let c = a + b; c;";
+    let expected = Object::Integer(10);
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_eval_let_statement_error_if_identifier_unbound() {
+    let input = "foo";
+    let expected_error = EvalError::UnrecognisedVariable;
+    let error = parse_and_eval(input).err().unwrap();
+    assert_eq!(error, expected_error);
 }
