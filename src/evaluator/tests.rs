@@ -75,6 +75,14 @@ fn test_eval_bang_operator_six() {
 }
 
 #[test]
+fn test_eval_bang_operator_seven() {
+    let input = "!0";
+    let expected = Object::Boolean(true);
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
 fn test_eval_minus_operator_one() {
     let input = "-5";
     let expected = Object::Integer(-5);
@@ -176,4 +184,52 @@ fn test_eval_infix_error_if_invalid_infix_with_bools() {
     let expected_error = EvalError::UnknownOperator;
     let error = parse_and_eval(input).err().unwrap();
     assert_eq!(error, expected_error);
+}
+
+#[test]
+fn test_eval_if_expression_one() {
+    let input = "if (true) { 10 }";
+    let expected = Object::Integer(10);
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_eval_if_expression_two() {
+    let input = "if (false) { 10 }";
+    let expected = Object::Null;
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_eval_if_expression_three() {
+    let input = "if (1) { 10 }";
+    let expected = Object::Integer(10);
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_eval_if_expression_four() {
+    let input = "if (1 < 2) { 10 }";
+    let expected = Object::Integer(10);
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_eval_if_expression_five() {
+    let input = "if (1 < 2) { 10 } else { 20 }";
+    let expected = Object::Integer(10);
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_eval_if_expression_six() {
+    let input = "if (1 > 2) { 10 } else { 20 }";
+    let expected = Object::Integer(20);
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
 }

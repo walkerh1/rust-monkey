@@ -6,37 +6,66 @@ mod tests;
 
 pub fn eval(program: Program) -> Result<Object, EvalError> {
     let Program(statements) = program;
-    eval_statements(statements)
+    eval_statements(&statements)
 }
 
-fn eval_statements(statements: Vec<Statement>) -> Result<Object, EvalError> {
+fn eval_statements(statements: &Vec<Statement>) -> Result<Object, EvalError> {
     let mut result = Object::Null;
 
     for statement in statements.iter() {
-        result = match statement {
-            Statement::Let(_, _) => todo!(),
-            Statement::Return(_) => todo!(),
-            Statement::Expression(exp) => eval_expression(exp)?,
-            Statement::BlockStatement(_) => todo!(),
-        }
+        result = eval_statement(statement)?
     }
 
     Ok(result)
 }
 
+fn eval_statement(statement: &Statement) -> Result<Object, EvalError> {
+    Ok(match statement {
+        Statement::Let(_, _) => todo!(),
+        Statement::Return(_) => todo!(),
+        Statement::Expression(exp) => eval_expression(exp)?,
+        Statement::BlockStatement(stats) => eval_statements(stats)?,
+    })
+}
+
 fn eval_expression(expression: &Expression) -> Result<Object, EvalError> {
     let result = match expression {
         Expression::Identifier(_) => todo!(),
-        Expression::Integer(int) => Object::Integer(*int),
-        Expression::Prefix(operator, operand) => eval_prefix_expressions(operator, operand)?,
-        Expression::Infix(left, infix, right) => eval_infix_expression(left, infix, right)?,
-        Expression::Boolean(val) => Object::Boolean(*val),
-        Expression::If(_, _, _) => todo!(),
+        Expression::Integer(int) => Ok(Object::Integer(*int)),
+        Expression::Prefix(operator, operand) => eval_prefix_expressions(operator, operand),
+        Expression::Infix(left, infix, right) => eval_infix_expression(left, infix, right),
+        Expression::Boolean(val) => Ok(Object::Boolean(*val)),
+        Expression::If(condition, if_block, else_block) => {
+            eval_if_expression(condition, if_block, else_block)
+        }
         Expression::Function(_, _) => todo!(),
         Expression::Call(_, _) => todo!(),
     };
 
-    Ok(result)
+    result
+}
+
+fn eval_if_expression(
+    condition: &Expression,
+    if_block: &Statement,
+    maybe_else_block: &Option<Box<Statement>>,
+) -> Result<Object, EvalError> {
+    let condition = eval_expression(condition)?;
+
+    if is_truthy(&condition) {
+        Ok(eval_statement(if_block)?)
+    } else if let Some(else_block) = maybe_else_block {
+        Ok(eval_statement(else_block)?)
+    } else {
+        Ok(Object::Null)
+    }
+}
+
+fn is_truthy(object: &Object) -> bool {
+    match object {
+        Object::Boolean(false) | Object::Integer(0) | Object::Null => false,
+        _ => true,
+    }
 }
 
 fn eval_infix_expression(
@@ -91,6 +120,7 @@ fn eval_minus_operator_expression(object: &Object) -> Result<Object, EvalError> 
 }
 
 fn eval_bang_operator_expression(object: &Object) -> Object {
+    // false, Null, and 0 are falsy; everything else is truthy
     match object {
         Object::Null => Object::Boolean(true),
         Object::Integer(int) => Object::Boolean(if *int == 0 { true } else { false }),
