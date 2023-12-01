@@ -1,11 +1,12 @@
 use std::fmt::{Display, Formatter};
+use std::rc::Rc;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Object {
     Null,
     Integer(i64),
     Boolean(bool),
-    Return(Box<Object>),
+    Return(Rc<Object>),
 }
 
 impl Display for Object {

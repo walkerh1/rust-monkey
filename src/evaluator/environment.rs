@@ -1,8 +1,9 @@
 use std::collections::HashMap;
+use std::rc::Rc;
 use crate::evaluator::object::Object;
 
 pub struct Environment {
-    store: HashMap<String, Object>,
+    store: HashMap<String, Rc<Object>>,
 }
 
 impl Environment {
@@ -12,11 +13,14 @@ impl Environment {
         }
     }
 
-    pub fn get(&self, key: &str) -> Option<&Object> {
-        self.store.get(key)
+    pub fn get(&self, key: &str) -> Option<Rc<Object>> {
+        match self.store.get(key) {
+            Some(object) => Some(Rc::clone(object)),
+            None => None,
+        }
     }
 
-    pub fn set(&mut self, key: &str, val: Object) {
-        self.store.insert(key.to_string(), val);
+    pub fn set(&mut self, key: &str, val: Rc<Object>) {
+        self.store.insert(key.to_string(), Rc::clone(&val));
     }
 }
