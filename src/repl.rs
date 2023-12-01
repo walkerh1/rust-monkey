@@ -2,6 +2,7 @@ use crate::evaluator::eval;
 use crate::parser::Parser;
 use std::io::{self, Write};
 use crate::evaluator::environment::Environment;
+use crate::evaluator::object::Object;
 
 pub struct Repl;
 
@@ -11,6 +12,8 @@ impl Repl {
     pub fn start() -> io::Result<()> {
         let reader = io::stdin();
         let mut writer = io::stdout();
+
+        let mut env = Environment::new();
 
         loop {
             writer.write_all(PROMPT.as_bytes())?;
@@ -33,11 +36,13 @@ impl Repl {
                 }
             };
 
-            let mut env = Environment::new();
 
             let eval_result = eval(program, &mut env);
             match eval_result {
-                Ok(object) => println!("{object}"),
+                Ok(object) => match &*object {
+                    Object::Null => continue,
+                    obj => println!("{obj}")
+                }
                 Err(error) => println!("{error:?}"),
             }
         }

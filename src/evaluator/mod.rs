@@ -3,8 +3,8 @@ use crate::evaluator::environment::Environment;
 use crate::evaluator::object::Object;
 use crate::parser::ast::{Expression, Infix, Prefix, Program, Statement};
 
-mod object;
 mod tests;
+pub mod object;
 pub mod environment;
 
 pub fn eval(program: Program, env: &mut Environment) -> Result<Rc<Object>, EvalError> {
