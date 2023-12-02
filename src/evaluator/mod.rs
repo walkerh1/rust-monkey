@@ -80,6 +80,7 @@ fn eval_expression(
     match expression {
         Expression::Identifier(id) => eval_identifier_expression(id, env),
         Expression::Integer(int) => Ok(Rc::new(Object::Integer(*int))),
+        Expression::String(string) => Ok(Rc::new(Object::String(string.clone()))),
         Expression::Prefix(operator, operand) => eval_prefix_expressions(operator, operand, env),
         Expression::Infix(left, infix, right) => eval_infix_expression(left, infix, right, env),
         Expression::Boolean(val) => Ok(Rc::new(Object::Boolean(*val))),
@@ -201,6 +202,10 @@ fn eval_infix_expression(
             Rc::new(Object::Boolean(left_bool != right_bool))
         }
         (Object::Boolean(_), _, Object::Boolean(_)) => return Err(EvalError::UnknownOperator),
+        (Object::String(s1), Infix::Plus, Object::String(s2)) => {
+            Rc::new(Object::String(format!("{s1}{s2}")))
+        }
+        (Object::String(_), _, Object::String(_)) => return Err(EvalError::UnknownOperator),
         _ => return Err(EvalError::IncompatibleTypes),
     })
 }

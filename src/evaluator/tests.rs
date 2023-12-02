@@ -4,7 +4,7 @@ use crate::evaluator::environment::Environment;
 use crate::evaluator::object::{Function, Object};
 use crate::evaluator::{eval, EvalError};
 use crate::parser::ast::{Expression, Infix, Statement};
-use crate::parser::Parser;
+use crate::parser::{Parser, ParsingError};
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -474,4 +474,28 @@ counter(0);
     let expected = Rc::new(Object::Boolean(true));
     let result = parse_and_eval(input).ok().unwrap();
     assert_eq!(result, expected);
+}
+
+#[test]
+fn test_eval_string_expression() {
+    let input = "\"hello world\"";
+    let expected = Rc::new(Object::String(String::from("hello world")));
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_eval_string_concatenation() {
+    let input = "\"hello\" + \"world\"";
+    let expected = Rc::new(Object::String(String::from("helloworld")));
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_eval_string_concatenation_error_if_unsupported_infix() {
+    let input = "\"hello\" * \"world\"";
+    let expected_error = EvalError::UnknownOperator;
+    let error = parse_and_eval(input).err().unwrap();
+    assert_eq!(error, expected_error);
 }

@@ -85,6 +85,8 @@ if (5 < 10) {
 
 10 == 10;
 10 != 9;
+\"foobar\"
+\"foo bar\"
 ";
 
     let tests = vec![
@@ -125,6 +127,8 @@ if (5 < 10) {
         Token::Noteq,
         Token::Int(String::from("9")),
         Token::Semicolon,
+        Token::String(String::from("foobar")),
+        Token::String(String::from("foo bar")),
     ];
     let tokens: Vec<_> = input.tokens().collect();
     assert_eq!(tests, tokens);

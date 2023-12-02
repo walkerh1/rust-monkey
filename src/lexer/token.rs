@@ -5,6 +5,7 @@ pub enum Token {
     // identifiers and literals
     Identifier(String),
     Int(String),
+    String(String),
 
     // operators
     Assign,
@@ -48,6 +49,7 @@ impl Display for Token {
             match self {
                 Token::Identifier(id) => id.to_string(),
                 Token::Int(val) => val.to_string(),
+                Token::String(string) => string.to_string(),
                 Token::Assign => String::from("="),
                 Token::Plus => String::from("+"),
                 Token::Minus => String::from("-"),

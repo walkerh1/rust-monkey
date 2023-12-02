@@ -788,3 +788,13 @@ fn test_call_expression_error_if_extra_comma() {
     let errors = Parser::parse_program(input).err().unwrap();
     assert_eq!(errors, expected_errors);
 }
+
+#[test]
+fn test_string_expression() {
+    let input = "\"hello world\"";
+    let expected = Program(vec![Statement::Expression(Expression::String(
+        String::from("hello world"),
+    ))]);
+    let program = Parser::parse_program(input).ok().unwrap();
+    assert_eq!(program, expected);
+}

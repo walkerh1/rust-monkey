@@ -46,6 +46,19 @@ impl<'a> LexerIter<'a> {
         }
         num
     }
+
+    fn get_string(&mut self) -> String {
+        let mut string = String::new();
+        while let Some(c) = self.iter.peek() {
+            if *c == '"' {
+                self.iter.next();
+                break;
+            }
+            string.push(*c);
+            self.iter.next();
+        }
+        string
+    }
 }
 
 impl<'a> Iterator for LexerIter<'a> {
@@ -85,6 +98,7 @@ impl<'a> Iterator for LexerIter<'a> {
                 }
                 Some(Token::Bang)
             }
+            '"' => Some(Token::String(self.get_string())),
             _ => {
                 if ch.is_ascii_alphabetic() || ch == '_' {
                     let word = self.get_rest_of_word(ch);

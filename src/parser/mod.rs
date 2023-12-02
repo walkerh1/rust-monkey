@@ -193,6 +193,7 @@ impl<'a> Parser<'a> {
         let mut left_expression = match token {
             Token::Identifier(id) => Self::parse_identifier(id),
             Token::Int(int) => Self::parse_integer(int),
+            Token::String(string) => Self::parse_string(string),
             Token::Bang | Token::Minus => self.parse_prefix_expression(token),
             Token::True => Parser::parse_boolean(true),
             Token::False => Parser::parse_boolean(false),
@@ -239,6 +240,10 @@ impl<'a> Parser<'a> {
         int.parse::<i64>()
             .map(Expression::Integer)
             .map_err(|_| ParsingError::InvalidInteger(int.to_string()))
+    }
+
+    fn parse_string(string: &str) -> Result<Expression, crate::parser::ParsingError> {
+        Ok(Expression::String(string.to_string()))
     }
 
     fn parse_boolean(val: bool) -> Result<Expression, ParsingError> {

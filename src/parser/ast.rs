@@ -13,6 +13,7 @@ pub enum Statement {
 pub enum Expression {
     Identifier(String),
     Integer(i64),
+    String(String),
     Prefix(Prefix, Box<Expression>),
     Infix(Box<Expression>, Infix, Box<Expression>),
     Boolean(bool),
