@@ -25,6 +25,9 @@ impl Environment {
     }
 
     pub fn get(&self, key: &str) -> Option<Rc<Object>> {
+        // checking `store` before `outer` means a variable in the inner scope with
+        // the same name as a variable in the outer scope will SHADOW that variable
+        // in the outer scope.
         match self.store.get(key) {
             Some(val) => Some(Rc::clone(val)),
             None => match &self.outer {

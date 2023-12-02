@@ -437,11 +437,41 @@ addTwo(2)
 }
 
 #[test]
+fn test_eval_function_closure_three() {
+    let input = "
+let multiply = fn(x, y) { x * y };
+let applyFunc = fn(x, y, func) { func(x, y) };
+applyFunc(3, 14, multiply)
+";
+    let expected = Rc::new(Object::Integer(42));
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
 fn test_eval_function_with_return_statement() {
     let input = "let addOne = fn(x) { return x + 1; };
 let y = addOne(5);
 return y + 1;";
     let expected = Rc::new(Object::Integer(7));
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_eval_recursive_function() {
+    let input = "
+let counter = fn(x) {
+    if (x > 100) {
+        return true;
+    } else {
+        let foobar = 9999;
+        counter(x + 1);
+    }
+};
+counter(0);
+";
+    let expected = Rc::new(Object::Boolean(true));
     let result = parse_and_eval(input).ok().unwrap();
     assert_eq!(result, expected);
 }
