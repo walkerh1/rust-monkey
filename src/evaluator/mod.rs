@@ -1,61 +1,70 @@
-use std::rc::Rc;
 use crate::evaluator::environment::Environment;
-use crate::evaluator::object::Object;
+use crate::evaluator::object::{Function, Object};
 use crate::parser::ast::{Expression, Infix, Prefix, Program, Statement};
+use std::cell::RefCell;
+use std::rc::Rc;
 
-mod tests;
-pub mod object;
 pub mod environment;
+pub mod object;
+mod tests;
 
-pub fn eval(program: Program, env: &mut Environment) -> Result<Rc<Object>, EvalError> {
+pub fn eval(program: Program, env: Rc<RefCell<Environment>>) -> Result<Rc<Object>, EvalError> {
     let Program(statements) = program;
     eval_statements(&statements, env)
 }
 
-fn eval_statements(statements: &[Statement], env: &mut Environment) -> Result<Rc<Object>, EvalError> {
+fn eval_statements(
+    statements: &[Statement],
+    env: Rc<RefCell<Environment>>,
+) -> Result<Rc<Object>, EvalError> {
     let mut result = Rc::new(Object::Null);
 
     for statement in statements.iter() {
-        result = match eval_statement(statement, env)? {
-            Some(object) => match &*object {
-                Object::Return(obj) => return Ok(Rc::clone(obj)),
-                _ => object,
-            },
-            None => continue,
+        result = eval_statement(statement, Rc::clone(&env))?;
+        if let Object::Return(object) = &*result {
+            result = Rc::clone(object);
+            break;
         }
     }
 
     Ok(result)
 }
 
-fn eval_statement(statement: &Statement, env: &mut Environment) -> Result<Option<Rc<Object>>, EvalError> {
+fn eval_statement(
+    statement: &Statement,
+    env: Rc<RefCell<Environment>>,
+) -> Result<Rc<Object>, EvalError> {
     Ok(match statement {
         Statement::Let(id, val) => {
             eval_let_statement(id, val, env)?;
-            None
-        },
-        Statement::Return(exp) => Some(Rc::new(Object::Return(Rc::clone(&eval_expression(exp, env)?)))),
-        Statement::Expression(exp) => Some(eval_expression(exp, env)?),
-        Statement::BlockStatement(stats) => Some(eval_block_statement(stats, env)?),
+            Rc::new(Object::Null)
+        }
+        Statement::Return(exp) => Rc::new(Object::Return(Rc::clone(&eval_expression(exp, env)?))),
+        Statement::Expression(exp) => eval_expression(exp, env)?,
+        Statement::BlockStatement(statements) => eval_block_statement(statements, env)?,
     })
 }
 
-fn eval_let_statement(id: &Expression, val: &Expression, env: &mut Environment) -> Result<(), EvalError> {
+fn eval_let_statement(
+    id: &Expression,
+    val: &Expression,
+    env: Rc<RefCell<Environment>>,
+) -> Result<(), EvalError> {
     if let Expression::Identifier(key) = id {
-        let value = eval_expression(val, env)?;
-        env.set(key, value);
+        let value = eval_expression(val, Rc::clone(&env))?;
+        env.borrow_mut().set(key, value);
     }
     Ok(())
 }
 
-fn eval_block_statement(statements: &[Statement], env: &mut Environment) -> Result<Rc<Object>, EvalError> {
+fn eval_block_statement(
+    statements: &[Statement],
+    env: Rc<RefCell<Environment>>,
+) -> Result<Rc<Object>, EvalError> {
     let mut result = Rc::new(Object::Null);
 
     for statement in statements.iter() {
-        result = match eval_statement(statement, env)? {
-            Some(res) => res,
-            None => continue,
-        };
+        result = eval_statement(statement, Rc::clone(&env))?;
         if let Object::Return(_) = *result {
             break;
         }
@@ -64,7 +73,10 @@ fn eval_block_statement(statements: &[Statement], env: &mut Environment) -> Resu
     Ok(result)
 }
 
-fn eval_expression(expression: &Expression, env: &mut Environment) -> Result<Rc<Object>, EvalError> {
+fn eval_expression(
+    expression: &Expression,
+    env: Rc<RefCell<Environment>>,
+) -> Result<Rc<Object>, EvalError> {
     match expression {
         Expression::Identifier(id) => eval_identifier_expression(id, env),
         Expression::Integer(int) => Ok(Rc::new(Object::Integer(*int))),
@@ -74,15 +86,74 @@ fn eval_expression(expression: &Expression, env: &mut Environment) -> Result<Rc<
         Expression::If(condition, if_block, else_block) => {
             eval_if_expression(condition, if_block, else_block, env)
         }
-        Expression::Function(_, _) => todo!(),
-        Expression::Call(_, _) => todo!(),
+        Expression::Function(parameters, body) => {
+            eval_function_definition_expression(parameters, body, env)
+        }
+        Expression::Call(func, args) => eval_function_call_expression(func, args, env),
     }
 }
 
-fn eval_identifier_expression(id: &str, env: &Environment) -> Result<Rc<Object>, EvalError> {
-    match env.get(id) {
+fn eval_function_call_expression(
+    func: &Expression,
+    args: &[Expression],
+    env: Rc<RefCell<Environment>>,
+) -> Result<Rc<Object>, EvalError> {
+    let function = eval_expression(func, Rc::clone(&env))?;
+    let arguments: Vec<Rc<Object>> = args
+        .iter()
+        .map(|exp| eval_expression(exp, Rc::clone(&env)))
+        .collect::<Result<Vec<Rc<Object>>, EvalError>>()?;
+
+    apply_function(function, &arguments)
+}
+
+fn apply_function(func: Rc<Object>, args: &[Rc<Object>]) -> Result<Rc<Object>, EvalError> {
+    if let Object::Function(function) = &*func {
+        let extended_env = Environment::new_enclosed(Rc::clone(&function.env));
+        function
+            .parameters
+            .iter()
+            .zip(args.iter())
+            .for_each(|(p, a)| extended_env.borrow_mut().set(p, Rc::clone(a)));
+
+        let mut result = eval_statement(&function.body, extended_env)?;
+
+        if let Object::Return(object) = &*result {
+            result = Rc::clone(object);
+        }
+
+        Ok(result)
+    } else {
+        Err(EvalError::NotAFunction)
+    }
+}
+
+fn eval_function_definition_expression(
+    parameters: &[Expression],
+    body: &Statement,
+    env: Rc<RefCell<Environment>>,
+) -> Result<Rc<Object>, EvalError> {
+    let mut params = vec![];
+    parameters.iter().for_each(|exp| {
+        if let Expression::Identifier(id) = exp {
+            params.push(id.to_string());
+        }
+    });
+
+    Ok(Rc::new(Object::Function(Function {
+        parameters: params,
+        body: body.clone(),
+        env,
+    })))
+}
+
+fn eval_identifier_expression(
+    id: &str,
+    env: Rc<RefCell<Environment>>,
+) -> Result<Rc<Object>, EvalError> {
+    match env.borrow().get(id) {
         Some(object) => Ok(object),
-        None => Err(EvalError::UnrecognisedVariable)
+        None => Err(EvalError::UnrecognisedVariable),
     }
 }
 
@@ -90,20 +161,14 @@ fn eval_if_expression(
     condition: &Expression,
     if_block: &Statement,
     maybe_else_block: &Option<Box<Statement>>,
-    env: &mut Environment,
+    env: Rc<RefCell<Environment>>,
 ) -> Result<Rc<Object>, EvalError> {
-    let condition = eval_expression(condition, env)?;
+    let condition = eval_expression(condition, Rc::clone(&env))?;
 
     if is_truthy(&condition) {
-        Ok(match eval_statement(if_block, env)? {
-            Some(result) => result,
-            None => Rc::new(Object::Null)
-        })
+        eval_statement(if_block, Rc::clone(&env))
     } else if let Some(else_block) = maybe_else_block {
-        Ok(match eval_statement(else_block, env)? {
-            Some(result) => result,
-            None => Rc::new(Object::Null)
-        })
+        eval_statement(else_block, Rc::clone(&env))
     } else {
         Ok(Rc::new(Object::Null))
     }
@@ -120,10 +185,10 @@ fn eval_infix_expression(
     left: &Expression,
     infix: &Infix,
     right: &Expression,
-    env: &mut Environment,
+    env: Rc<RefCell<Environment>>,
 ) -> Result<Rc<Object>, EvalError> {
-    let left_object = eval_expression(left, env)?;
-    let right_object = eval_expression(right, env)?;
+    let left_object = eval_expression(left, Rc::clone(&env))?;
+    let right_object = eval_expression(right, Rc::clone(&env))?;
 
     Ok(match (&*left_object, infix, &*right_object) {
         (Object::Integer(left_int), _, Object::Integer(right_int)) => {
@@ -155,7 +220,11 @@ fn eval_integer_infix_expression(left: i64, infix: &Infix, right: i64) -> Rc<Obj
     Rc::new(result)
 }
 
-fn eval_prefix_expressions(operator: &Prefix, operand: &Expression, env: &mut Environment) -> Result<Rc<Object>, EvalError> {
+fn eval_prefix_expressions(
+    operator: &Prefix,
+    operand: &Expression,
+    env: Rc<RefCell<Environment>>,
+) -> Result<Rc<Object>, EvalError> {
     let right = eval_expression(operand, env)?;
     match operator {
         Prefix::Minus => eval_minus_operator_expression(&right),
@@ -187,4 +256,5 @@ pub enum EvalError {
     IncompatibleTypes,
     UnknownOperator,
     UnrecognisedVariable,
+    NotAFunction,
 }

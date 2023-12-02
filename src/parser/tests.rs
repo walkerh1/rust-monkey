@@ -665,6 +665,19 @@ fn test_function_literal() {
 }
 
 #[test]
+fn test_function_literal_no_parameters() {
+    let input = "fn() { 1 };";
+    let expected = Program(vec![Statement::Expression(Expression::Function(
+        vec![],
+        Box::new(Statement::BlockStatement(vec![Statement::Expression(
+            Expression::Integer(1),
+        )])),
+    ))]);
+    let program = Parser::parse_program(input).ok().unwrap();
+    assert_eq!(program, expected);
+}
+
+#[test]
 fn test_function_literal_error_if_missing_brace() {
     let input = "fn(x, y) { x + y; ";
     let expected_errors = vec![ParsingError::UnexpectedEof];

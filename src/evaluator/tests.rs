@@ -1,16 +1,18 @@
 #![cfg(test)]
 
-use std::rc::Rc;
-use crate::evaluator::object::Object;
-use crate::evaluator::{eval, EvalError};
 use crate::evaluator::environment::Environment;
+use crate::evaluator::object::{Function, Object};
+use crate::evaluator::{eval, EvalError};
+use crate::parser::ast::{Expression, Infix, Statement};
 use crate::parser::Parser;
+use std::cell::RefCell;
+use std::rc::Rc;
 
 fn parse_and_eval(input: &str) -> Result<Rc<Object>, EvalError> {
-    // assume only parsabale strings are provided
+    // PRE: `input` is a well-formed (i.e. parsable) program
     let program = Parser::parse_program(input).unwrap();
-    let mut env = Environment::new();
-    eval(program, &mut env)
+    let env = Rc::new(RefCell::new(Environment::new()));
+    eval(program, env)
 }
 
 #[test]
@@ -238,6 +240,14 @@ fn test_eval_if_expression_six() {
 }
 
 #[test]
+fn test_eval_if_expression_seven() {
+    let input = "if (1 > 2) { let x = 10; }";
+    let expected = Rc::new(Object::Null);
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
 fn test_return_statement_one() {
     let input = "return 10;";
     let expected = Rc::new(Object::Integer(10));
@@ -330,4 +340,108 @@ fn test_eval_let_statement_error_if_identifier_unbound() {
     let expected_error = EvalError::UnrecognisedVariable;
     let error = parse_and_eval(input).err().unwrap();
     assert_eq!(error, expected_error);
+}
+
+#[test]
+fn test_eval_function_definition() {
+    let input = "fn(x) { x + 2 }";
+    let expected = Rc::new(Object::Function(Function {
+        parameters: vec![String::from("x")],
+        body: Statement::BlockStatement(vec![Statement::Expression(Expression::Infix(
+            Box::new(Expression::Identifier(String::from("x"))),
+            Infix::Plus,
+            Box::new(Expression::Integer(2)),
+        ))]),
+        env: Rc::new(RefCell::new(Environment::new())),
+    }));
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_eval_function_call_one() {
+    let input = "let identity = fn(x) { x }; identity(5)";
+    let expected = Rc::new(Object::Integer(5));
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_eval_function_call_two() {
+    let input = "let identity = fn(x) { return x; }; identity(5)";
+    let expected = Rc::new(Object::Integer(5));
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_eval_function_call_three() {
+    let input = "let double = fn(x) { x * 2; }; double(5)";
+    let expected = Rc::new(Object::Integer(10));
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_eval_function_call_four() {
+    let input = "let add = fn(x, y) { x + y; }; add(5, 5)";
+    let expected = Rc::new(Object::Integer(10));
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_eval_function_call_five() {
+    let input = "let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));";
+    let expected = Rc::new(Object::Integer(20));
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_eval_function_call_six() {
+    let input = "fn(x) { x; }(5)";
+    let expected = Rc::new(Object::Integer(5));
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_eval_function_call_seven() {
+    let input = "fn() { 5 }()";
+    let expected = Rc::new(Object::Integer(5));
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_eval_function_closure_one() {
+    let input = "let x = 4;
+let addFour = fn(i) { x + i };
+addFour(5)";
+    let expected = Rc::new(Object::Integer(9));
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_eval_function_closure_two() {
+    let input = "
+let newAdder = fn(x) { fn(y) { x + y } };
+let addTwo = newAdder(2);
+addTwo(2)
+";
+    let expected = Rc::new(Object::Integer(4));
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_eval_function_with_return_statement() {
+    let input = "let addOne = fn(x) { return x + 1; };
+let y = addOne(5);
+return y + 1;";
+    let expected = Rc::new(Object::Integer(7));
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
 }

@@ -1,7 +1,7 @@
 #[derive(Debug, PartialEq)]
 pub struct Program(pub Vec<Statement>);
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Statement {
     Let(Expression, Expression),
     Return(Expression),
@@ -9,7 +9,7 @@ pub enum Statement {
     BlockStatement(Vec<Statement>),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Expression {
     Identifier(String),
     Integer(i64),
@@ -21,13 +21,13 @@ pub enum Expression {
     Call(Box<Expression>, Vec<Expression>),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Prefix {
     Minus,
     Bang,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Infix {
     Plus,
     Minus,

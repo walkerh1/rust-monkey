@@ -305,6 +305,12 @@ impl<'a> Parser<'a> {
 
         let mut parameters = vec![];
 
+        // handle case where there are no parameters
+        if let Some(Token::Rparen) = self.iter.peek() {
+            self.next_token_or_end()?;
+            return Ok(parameters);
+        }
+
         loop {
             match self.next_token_or_end()? {
                 Token::Identifier(id) => parameters.push(Expression::Identifier(id)),

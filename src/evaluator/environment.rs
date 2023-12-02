@@ -1,22 +1,36 @@
+use crate::evaluator::object::Object;
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
-use crate::evaluator::object::Object;
 
+#[derive(Debug, PartialEq)]
 pub struct Environment {
     store: HashMap<String, Rc<Object>>,
+    outer: Option<Rc<RefCell<Environment>>>,
 }
 
 impl Environment {
     pub fn new() -> Environment {
         Environment {
-            store: HashMap::new()
+            store: HashMap::new(),
+            outer: None,
         }
+    }
+
+    pub fn new_enclosed(outer: Rc<RefCell<Environment>>) -> Rc<RefCell<Environment>> {
+        Rc::new(RefCell::new(Environment {
+            store: HashMap::new(),
+            outer: Some(outer),
+        }))
     }
 
     pub fn get(&self, key: &str) -> Option<Rc<Object>> {
         match self.store.get(key) {
-            Some(object) => Some(Rc::clone(object)),
-            None => None,
+            Some(val) => Some(Rc::clone(val)),
+            None => match &self.outer {
+                Some(outer) => outer.borrow().get(key),
+                None => None,
+            },
         }
     }
 

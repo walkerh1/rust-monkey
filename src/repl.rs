@@ -1,8 +1,10 @@
-use crate::evaluator::eval;
-use crate::parser::Parser;
-use std::io::{self, Write};
 use crate::evaluator::environment::Environment;
+use crate::evaluator::eval;
 use crate::evaluator::object::Object;
+use crate::parser::Parser;
+use std::cell::RefCell;
+use std::io::{self, Write};
+use std::rc::Rc;
 
 pub struct Repl;
 
@@ -13,7 +15,7 @@ impl Repl {
         let reader = io::stdin();
         let mut writer = io::stdout();
 
-        let mut env = Environment::new();
+        let env = Rc::new(RefCell::new(Environment::new()));
 
         loop {
             writer.write_all(PROMPT.as_bytes())?;
@@ -36,13 +38,12 @@ impl Repl {
                 }
             };
 
-
-            let eval_result = eval(program, &mut env);
+            let eval_result = eval(program, Rc::clone(&env));
             match eval_result {
                 Ok(object) => match &*object {
-                    Object::Null => continue,
-                    obj => println!("{obj}")
-                }
+                    Object::Null | Object::Function(_) => continue,
+                    obj => println!("{obj}"),
+                },
                 Err(error) => println!("{error:?}"),
             }
         }
