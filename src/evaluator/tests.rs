@@ -4,7 +4,7 @@ use crate::evaluator::environment::Environment;
 use crate::evaluator::object::{Function, Object};
 use crate::evaluator::{eval, EvalError};
 use crate::parser::ast::{Expression, Infix, Statement};
-use crate::parser::{Parser, ParsingError};
+use crate::parser::Parser;
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -337,7 +337,7 @@ fn test_eval_let_statement_binding_four() {
 #[test]
 fn test_eval_let_statement_error_if_identifier_unbound() {
     let input = "foo";
-    let expected_error = EvalError::UnrecognisedVariable;
+    let expected_error = EvalError::UnrecognisedIdentifier;
     let error = parse_and_eval(input).err().unwrap();
     assert_eq!(error, expected_error);
 }
@@ -496,6 +496,22 @@ fn test_eval_string_concatenation() {
 fn test_eval_string_concatenation_error_if_unsupported_infix() {
     let input = "\"hello\" * \"world\"";
     let expected_error = EvalError::UnknownOperator;
+    let error = parse_and_eval(input).err().unwrap();
+    assert_eq!(error, expected_error);
+}
+
+#[test]
+fn test_eval_builtin_len_function() {
+    let input = "len(\"hello world\")";
+    let expected = Rc::new(Object::Integer(11));
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_eval_builtin_len_error_if_too_many_args() {
+    let input = "len(\"hello\", \"world\")";
+    let expected_error = EvalError::IncorrectNumberOfArgs;
     let error = parse_and_eval(input).err().unwrap();
     assert_eq!(error, expected_error);
 }

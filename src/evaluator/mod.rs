@@ -1,9 +1,11 @@
+use crate::evaluator::builtin::Builtin;
 use crate::evaluator::environment::Environment;
 use crate::evaluator::object::{Function, Object};
 use crate::parser::ast::{Expression, Infix, Prefix, Program, Statement};
 use std::cell::RefCell;
 use std::rc::Rc;
 
+mod builtin;
 pub mod environment;
 pub mod object;
 mod tests;
@@ -109,23 +111,30 @@ fn eval_function_call_expression(
 }
 
 fn apply_function(func: Rc<Object>, args: &[Rc<Object>]) -> Result<Rc<Object>, EvalError> {
-    if let Object::Function(function) = &*func {
-        let extended_env = Environment::new_enclosed(Rc::clone(&function.env));
-        function
-            .parameters
-            .iter()
-            .zip(args.iter())
-            .for_each(|(p, a)| extended_env.borrow_mut().set(p, Rc::clone(a)));
+    match &*func {
+        Object::Function(function) => {
+            let extended_env = Environment::new_enclosed(Rc::clone(&function.env));
 
-        let mut result = eval_statement(&function.body, extended_env)?;
+            if function.parameters.len() != args.len() {
+                return Err(EvalError::IncorrectNumberOfArgs);
+            }
 
-        if let Object::Return(object) = &*result {
-            result = Rc::clone(object);
+            function
+                .parameters
+                .iter()
+                .zip(args.iter())
+                .for_each(|(p, a)| extended_env.borrow_mut().set(p, Rc::clone(a)));
+
+            let mut result = eval_statement(&function.body, extended_env)?;
+
+            if let Object::Return(object) = &*result {
+                result = Rc::clone(object);
+            }
+
+            Ok(result)
         }
-
-        Ok(result)
-    } else {
-        Err(EvalError::NotAFunction)
+        Object::BuiltIn(builtin) => builtin.apply(args),
+        _ => Err(EvalError::NotAFunction),
     }
 }
 
@@ -154,7 +163,10 @@ fn eval_identifier_expression(
 ) -> Result<Rc<Object>, EvalError> {
     match env.borrow().get(id) {
         Some(object) => Ok(object),
-        None => Err(EvalError::UnrecognisedVariable),
+        None => match Builtin::get(id) {
+            None => Err(EvalError::UnrecognisedIdentifier),
+            Some(object) => Ok(object),
+        },
     }
 }
 
@@ -260,6 +272,7 @@ fn eval_bang_operator_expression(object: &Object) -> Rc<Object> {
 pub enum EvalError {
     IncompatibleTypes,
     UnknownOperator,
-    UnrecognisedVariable,
+    UnrecognisedIdentifier,
     NotAFunction,
+    IncorrectNumberOfArgs,
 }
