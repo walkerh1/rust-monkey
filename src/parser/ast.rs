@@ -13,13 +13,15 @@ pub enum Statement {
 pub enum Expression {
     Identifier(String),
     Integer(i64),
-    String(String),
     Prefix(Prefix, Box<Expression>),
     Infix(Box<Expression>, Infix, Box<Expression>),
     Boolean(bool),
     If(Box<Expression>, Box<Statement>, Option<Box<Statement>>),
     Function(Vec<Expression>, Box<Statement>),
     Call(Box<Expression>, Vec<Expression>),
+    String(String),
+    Array(Vec<Expression>),
+    Index(Box<Expression>, Box<Expression>),
 }
 
 #[derive(Clone, Debug, PartialEq)]

@@ -26,6 +26,8 @@ pub enum Token {
     Rparen,
     Lbrace,
     Rbrace,
+    Lbracket,
+    Rbracket,
 
     // keywords
     Function,
@@ -66,6 +68,8 @@ impl Display for Token {
                 Token::Rparen => String::from(")"),
                 Token::Lbrace => String::from("{"),
                 Token::Rbrace => String::from("}"),
+                Token::Lbracket => String::from("["),
+                Token::Rbracket => String::from("]"),
                 Token::Function => String::from("fn"),
                 Token::Let => String::from("let"),
                 Token::True => String::from("true"),

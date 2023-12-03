@@ -798,3 +798,101 @@ fn test_string_expression() {
     let program = Parser::parse_program(input).ok().unwrap();
     assert_eq!(program, expected);
 }
+
+#[test]
+fn test_array_expression() {
+    let input = "[1, 2, 3 * 4, 1 + 1]";
+    let expected = Program(vec![Statement::Expression(Expression::Array(vec![
+        Expression::Integer(1),
+        Expression::Integer(2),
+        Expression::Infix(
+            Box::new(Expression::Integer(3)),
+            Infix::Multiply,
+            Box::new(Expression::Integer(4)),
+        ),
+        Expression::Infix(
+            Box::new(Expression::Integer(1)),
+            Infix::Plus,
+            Box::new(Expression::Integer(1)),
+        ),
+    ]))]);
+    let program = Parser::parse_program(input).ok().unwrap();
+    assert_eq!(program, expected);
+}
+
+#[test]
+fn test_array_expression_empty() {
+    let input = "[]";
+    let expected = Program(vec![Statement::Expression(Expression::Array(vec![]))]);
+    let program = Parser::parse_program(input).ok().unwrap();
+    assert_eq!(program, expected);
+}
+
+#[test]
+fn test_array_expression_errors() {
+    let input = "[1, 2, 3,]; [1, 2, 3";
+    let expected_errors = vec![
+        ParsingError::InvalidPrefixOperator(Token::Rbracket),
+        ParsingError::UnexpectedEof,
+    ];
+    let errors = Parser::parse_program(input).err().unwrap();
+    assert_eq!(errors, expected_errors);
+}
+
+#[test]
+fn test_array_index_operator_expression() {
+    let input = "myArray[1 + 1]; [1, 2][0];";
+    let expected = Program(vec![
+        Statement::Expression(Expression::Index(
+            Box::new(Expression::Identifier(String::from("myArray"))),
+            Box::new(Expression::Infix(
+                Box::new(Expression::Integer(1)),
+                Infix::Plus,
+                Box::new(Expression::Integer(1)),
+            )),
+        )),
+        Statement::Expression(Expression::Index(
+            Box::new(Expression::Array(vec![
+                Expression::Integer(1),
+                Expression::Integer(2),
+            ])),
+            Box::new(Expression::Integer(0)),
+        )),
+    ]);
+    let program = Parser::parse_program(input).ok().unwrap();
+    assert_eq!(program, expected);
+}
+
+#[test]
+fn test_array_index_operator_precedence() {
+    let input = "a * myArray[1 + 1] + b"; // ((a * (myArray[(1 + 1)])) + b)
+    let expected = Program(vec![Statement::Expression(Expression::Infix(
+        Box::new(Expression::Infix(
+            Box::new(Expression::Identifier(String::from("a"))),
+            Infix::Multiply,
+            Box::new(Expression::Index(
+                Box::new(Expression::Identifier(String::from("myArray"))),
+                Box::new(Expression::Infix(
+                    Box::new(Expression::Integer(1)),
+                    Infix::Plus,
+                    Box::new(Expression::Integer(1)),
+                )),
+            )),
+        )),
+        Infix::Plus,
+        Box::new(Expression::Identifier(String::from("b"))),
+    ))]);
+    let program = Parser::parse_program(input).ok().unwrap();
+    assert_eq!(program, expected);
+}
+
+#[test]
+fn test_index_expression_errors() {
+    let input = "myArray[1; myArray[1, 2]";
+    let expected_errors = vec![
+        ParsingError::UnexpectedSemicolon,
+        ParsingError::UnexpectedToken(Token::Comma),
+    ];
+    let errors = Parser::parse_program(input).err().unwrap();
+    assert_eq!(errors, expected_errors);
+}

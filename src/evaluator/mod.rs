@@ -82,7 +82,6 @@ fn eval_expression(
     match expression {
         Expression::Identifier(id) => eval_identifier_expression(id, env),
         Expression::Integer(int) => Ok(Rc::new(Object::Integer(*int))),
-        Expression::String(string) => Ok(Rc::new(Object::String(string.clone()))),
         Expression::Prefix(operator, operand) => eval_prefix_expressions(operator, operand, env),
         Expression::Infix(left, infix, right) => eval_infix_expression(left, infix, right, env),
         Expression::Boolean(val) => Ok(Rc::new(Object::Boolean(*val))),
@@ -93,7 +92,48 @@ fn eval_expression(
             eval_function_definition_expression(parameters, body, env)
         }
         Expression::Call(func, args) => eval_function_call_expression(func, args, env),
+        Expression::String(string) => Ok(Rc::new(Object::String(string.clone()))),
+        Expression::Array(elements) => eval_array_literal(elements, env),
+        Expression::Index(exp, index) => eval_index_expression(exp, index, env),
     }
+}
+
+fn eval_index_expression(
+    exp: &Box<Expression>,
+    index: &Expression,
+    env: Rc<RefCell<Environment>>,
+) -> Result<Rc<Object>, EvalError> {
+    let array = eval_expression(exp, Rc::clone(&env))?;
+    let index = eval_expression(index, Rc::clone(&env))?;
+
+    match &*array {
+        Object::Array(array) => match &*index {
+            Object::Integer(idx) => {
+                if *idx < 0 || *idx as usize >= array.len() {
+                    return Err(EvalError::IndexOutOfBounds);
+                }
+                // safe to unwrap due to bound check
+                let result = array.get(*idx as usize).unwrap();
+                Ok(Rc::clone(result))
+            }
+            _ => Err(EvalError::IncompatibleTypes),
+        },
+        _ => Err(EvalError::IncompatibleTypes),
+    }
+}
+
+fn eval_array_literal(
+    expressions: &[Expression],
+    env: Rc<RefCell<Environment>>,
+) -> Result<Rc<Object>, EvalError> {
+    let mut array = vec![];
+
+    for exp in expressions.iter() {
+        let object = eval_expression(exp, Rc::clone(&env))?;
+        array.push(object);
+    }
+
+    Ok(Rc::new(Object::Array(array)))
 }
 
 fn eval_function_call_expression(
@@ -275,4 +315,5 @@ pub enum EvalError {
     UnrecognisedIdentifier,
     NotAFunction,
     IncorrectNumberOfArgs,
+    IndexOutOfBounds,
 }

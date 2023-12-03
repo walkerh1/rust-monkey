@@ -193,13 +193,14 @@ impl<'a> Parser<'a> {
         let mut left_expression = match token {
             Token::Identifier(id) => Self::parse_identifier(id),
             Token::Int(int) => Self::parse_integer(int),
-            Token::String(string) => Self::parse_string(string),
             Token::Bang | Token::Minus => self.parse_prefix_expression(token),
             Token::True => Parser::parse_boolean(true),
             Token::False => Parser::parse_boolean(false),
             Token::Lparen => self.parse_grouped_expression(),
             Token::If => self.parse_if_expression(),
             Token::Function => self.parse_function_literal(),
+            Token::String(string) => Self::parse_string(string),
+            Token::Lbracket => self.parse_array_expression(),
             _ => return Err(ParsingError::InvalidPrefixOperator(token.clone())),
         }?;
 
@@ -221,7 +222,8 @@ impl<'a> Parser<'a> {
                     | Token::Gt
                     | Token::Eq
                     | Token::Noteq => self.parse_infix_expression(left_expression, &operator)?,
-                    Token::Lparen => self.parse_call_expression(left_expression, &operator)?,
+                    Token::Lparen => self.parse_call_expression(left_expression)?,
+                    Token::Lbracket => self.parse_index_expression(left_expression)?,
                     _ => break,
                 }
             } else {
@@ -230,6 +232,53 @@ impl<'a> Parser<'a> {
         }
 
         Ok(left_expression)
+    }
+
+    fn parse_index_expression(&mut self, left: Expression) -> Result<Expression, ParsingError> {
+        if let Some(Token::Rbracket) = self.iter.peek() {
+            return Err(ParsingError::UnexpectedToken(Token::Rbracket));
+        }
+
+        let next_token = self.next_token_or_end()?;
+        let right = self.parse_expression(&next_token, Precedence::Lowest)?;
+
+        match self.next_token_or_end()? {
+            Token::Rbracket => {}
+            token => return Err(ParsingError::UnexpectedToken(token)),
+        }
+
+        Ok(Expression::Index(Box::new(left), Box::new(right)))
+    }
+
+    fn parse_array_expression(&mut self) -> Result<Expression, ParsingError> {
+        if let Some(Token::Rbracket) = self.iter.peek() {
+            self.next_token_or_end()?;
+            return Ok(Expression::Array(vec![]));
+        }
+
+        let array = self.parse_expression_list()?;
+
+        match self.next_token_or_end()? {
+            Token::Rbracket => {}
+            token => return Err(ParsingError::UnexpectedToken(token)),
+        }
+
+        Ok(Expression::Array(array))
+    }
+
+    fn parse_expression_list(&mut self) -> Result<Vec<Expression>, ParsingError> {
+        let mut array = vec![];
+
+        let next_token = self.next_token_or_end()?;
+        array.push(self.parse_expression(&next_token, Precedence::Lowest)?);
+
+        while let Some(Token::Comma) = self.iter.peek() {
+            self.next_token_or_end()?;
+            let next_token = self.next_token_or_end()?;
+            array.push(self.parse_expression(&next_token, Precedence::Lowest)?);
+        }
+
+        Ok(array)
     }
 
     fn parse_identifier(id: &str) -> Result<Expression, ParsingError> {
@@ -393,23 +442,13 @@ impl<'a> Parser<'a> {
     fn parse_call_expression(
         &mut self,
         left_expression: Expression,
-        _: &Token,
     ) -> Result<Expression, ParsingError> {
-        let mut arguments = vec![];
-
         if let Some(Token::Rparen) = self.iter.peek() {
             self.next_token_or_end()?;
-            return Ok(Expression::Call(Box::new(left_expression), arguments));
+            return Ok(Expression::Call(Box::new(left_expression), vec![]));
         }
 
-        let next_token = self.next_token_or_end()?;
-        arguments.push(self.parse_expression(&next_token, Precedence::Lowest)?);
-
-        while let Some(Token::Comma) = self.iter.peek() {
-            self.next_token_or_end()?;
-            let next_token = self.next_token_or_end()?;
-            arguments.push(self.parse_expression(&next_token, Precedence::Lowest)?);
-        }
+        let arguments = self.parse_expression_list()?;
 
         match self.next_token_or_end()? {
             Token::Rparen => {}

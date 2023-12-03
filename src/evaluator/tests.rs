@@ -515,3 +515,75 @@ fn test_eval_builtin_len_error_if_too_many_args() {
     let error = parse_and_eval(input).err().unwrap();
     assert_eq!(error, expected_error);
 }
+
+#[test]
+fn test_eval_array_literal() {
+    let input = "
+let a = 4;
+[1, a, 1 + 1, 2 * 3]
+";
+    let expected = Rc::new(Object::Array(vec![
+        Rc::new(Object::Integer(1)),
+        Rc::new(Object::Integer(4)),
+        Rc::new(Object::Integer(2)),
+        Rc::new(Object::Integer(6)),
+    ]));
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_eval_indexing_into_array_one() {
+    let input = "[1, 2][0]";
+    let expected = Rc::new(Object::Integer(1));
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_eval_indexing_into_array_two() {
+    let input = "[1, 2][1]";
+    let expected = Rc::new(Object::Integer(2));
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_eval_indexing_into_array_three() {
+    let input = "let i = 0; [10][i]";
+    let expected = Rc::new(Object::Integer(10));
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_eval_indexing_into_array_four() {
+    let input = "let arr = [1, 2, 3]; arr[2]";
+    let expected = Rc::new(Object::Integer(3));
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_eval_indexing_into_array_five() {
+    let input = "let arr = [1, 2, 3]; arr[0] + arr[1] + arr[2]";
+    let expected = Rc::new(Object::Integer(6));
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_eval_index_out_of_bounds_one() {
+    let input = "[1, 2, 3][3]";
+    let expected_error = EvalError::IndexOutOfBounds;
+    let error = parse_and_eval(input).err().unwrap();
+    assert_eq!(error, expected_error);
+}
+
+#[test]
+fn test_eval_index_out_of_bounds_two() {
+    let input = "[1, 2, 3][-1]";
+    let expected_error = EvalError::IndexOutOfBounds;
+    let error = parse_and_eval(input).err().unwrap();
+    assert_eq!(error, expected_error);
+}

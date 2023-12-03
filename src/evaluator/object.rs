@@ -14,6 +14,7 @@ pub enum Object {
     Return(Rc<Object>),
     Function(Function),
     BuiltIn(Builtin),
+    Array(Vec<Rc<Object>>),
 }
 
 impl Display for Object {
@@ -29,6 +30,14 @@ impl Display for Object {
                 Object::Return(object) => object.to_string(),
                 Object::Function(_) => "".to_string(),
                 Object::BuiltIn(_) => "".to_string(),
+                Object::Array(elements) => format!(
+                    "[{}]",
+                    elements
+                        .iter()
+                        .map(|element| element.to_string())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                ),
             }
         )
     }

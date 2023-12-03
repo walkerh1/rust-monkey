@@ -80,6 +80,8 @@ impl<'a> Iterator for LexerIter<'a> {
             ',' => Some(Token::Comma),
             '{' => Some(Token::Lbrace),
             '}' => Some(Token::Rbrace),
+            '[' => Some(Token::Lbracket),
+            ']' => Some(Token::Rbracket),
             '=' => {
                 if let Some(c) = self.iter.peek() {
                     if *c == '=' {
