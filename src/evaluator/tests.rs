@@ -587,3 +587,123 @@ fn test_eval_index_out_of_bounds_two() {
     let error = parse_and_eval(input).err().unwrap();
     assert_eq!(error, expected_error);
 }
+
+#[test]
+fn test_eval_builtin_len_for_array() {
+    let input = "len([1, 2, 3])";
+    let expected = Rc::new(Object::Integer(3));
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_eval_builtin_first() {
+    let input = "first([1, 2, 3])";
+    let expected = Rc::new(Object::Integer(1));
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_eval_builtin_first_on_empty() {
+    let input = "first([])";
+    let expected = Rc::new(Object::Null);
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_eval_builtin_error_if_not_array() {
+    let input = "first(\"hello\")";
+    let expected_error = EvalError::IncompatibleTypes;
+    let error = parse_and_eval(input).err().unwrap();
+    assert_eq!(error, expected_error);
+}
+
+#[test]
+fn test_eval_builtin_last() {
+    let input = "last([1, 2, 3])";
+    let expected = Rc::new(Object::Integer(3));
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_eval_builtin_last_on_empty() {
+    let input = "last([])";
+    let expected = Rc::new(Object::Null);
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_eval_builtin_last_if_not_array() {
+    let input = "last(\"hello\")";
+    let expected_error = EvalError::IncompatibleTypes;
+    let error = parse_and_eval(input).err().unwrap();
+    assert_eq!(error, expected_error);
+}
+
+#[test]
+fn test_eval_builtin_rest() {
+    let input = "rest([1, 2, 3])";
+    let expected = Rc::new(Object::Array(vec![
+        Rc::new(Object::Integer(2)),
+        Rc::new(Object::Integer(3)),
+    ]));
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_eval_builtin_rest_on_empty() {
+    let input = "rest([])";
+    let expected = Rc::new(Object::Null);
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_eval_builtin_rest_if_not_array() {
+    let input = "rest(\"hello\")";
+    let expected_error = EvalError::IncompatibleTypes;
+    let error = parse_and_eval(input).err().unwrap();
+    assert_eq!(error, expected_error);
+}
+
+#[test]
+fn test_eval_builtin_push() {
+    let input = "push([1, 2, 3], 4)";
+    let expected = Rc::new(Object::Array(vec![
+        Rc::new(Object::Integer(1)),
+        Rc::new(Object::Integer(2)),
+        Rc::new(Object::Integer(3)),
+        Rc::new(Object::Integer(4)),
+    ]));
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_eval_builtin_push_on_empty() {
+    let input = "push([], 1)";
+    let expected = Rc::new(Object::Array(vec![Rc::new(Object::Integer(1))]));
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_eval_builtin_push_error_if_not_array() {
+    let input = "push(\"hello\", 1)";
+    let expected_error = EvalError::IncompatibleTypes;
+    let error = parse_and_eval(input).err().unwrap();
+    assert_eq!(error, expected_error);
+}
+
+#[test]
+fn test_eval_builtin_push_error_if_wrong_number_of_args() {
+    let input = "push([1, 2, 3])";
+    let expected_error = EvalError::IncorrectNumberOfArgs;
+    let error = parse_and_eval(input).err().unwrap();
+    assert_eq!(error, expected_error);
+}

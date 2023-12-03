@@ -99,7 +99,7 @@ fn eval_expression(
 }
 
 fn eval_index_expression(
-    exp: &Box<Expression>,
+    exp: &Expression,
     index: &Expression,
     env: Rc<RefCell<Environment>>,
 ) -> Result<Rc<Object>, EvalError> {
@@ -173,7 +173,7 @@ fn apply_function(func: Rc<Object>, args: &[Rc<Object>]) -> Result<Rc<Object>, E
 
             Ok(result)
         }
-        Object::BuiltIn(builtin) => builtin.apply(args),
+        Object::Builtin(builtin) => builtin.apply(args),
         _ => Err(EvalError::NotAFunction),
     }
 }

@@ -13,7 +13,7 @@ pub enum Object {
     String(String),
     Return(Rc<Object>),
     Function(Function),
-    BuiltIn(Builtin),
+    Builtin(Builtin),
     Array(Vec<Rc<Object>>),
 }
 
@@ -29,7 +29,7 @@ impl Display for Object {
                 Object::String(string) => string.to_string(),
                 Object::Return(object) => object.to_string(),
                 Object::Function(_) => "".to_string(),
-                Object::BuiltIn(_) => "".to_string(),
+                Object::Builtin(_) => "".to_string(),
                 Object::Array(elements) => format!(
                     "[{}]",
                     elements
