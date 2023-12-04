@@ -843,3 +843,44 @@ while (true) {
     let result = parse_and_eval(input).ok().unwrap();
     assert_eq!(result, expected);
 }
+
+#[test]
+fn test_eval_assignment_expression() {
+    let input = "
+let i = 0;
+i = i + 1;
+i
+";
+    let expected = Rc::new(Object::Integer(1));
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_eval_assignment_expression_closure() {
+    let input = "
+let count = 0;
+let counter = fn() { count = count + 1; count };
+counter();
+counter();
+";
+    let expected = Rc::new(Object::Integer(2));
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_eval_assignment_expression_closure_and_hof() {
+    let input = "
+let makeCounter = fn() { let count = 0; fn() { count = count + 1; count } };
+let counter = makeCounter();
+counter();
+counter();
+counter();
+";
+    let expected = Rc::new(Object::Integer(3));
+    let result = parse_and_eval(input).ok().unwrap();
+    // let result = parse_and_eval(input).err().unwrap();
+    // println!("{result:?}");
+    assert_eq!(result, expected);
+}

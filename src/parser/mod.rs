@@ -59,14 +59,54 @@ impl<'a> Parser<'a> {
                 self.skip_to_semicolon();
                 r
             }
-            t => match self.parse_expression_statement(t) {
-                Ok(s) => Ok(s),
-                Err(e) => {
+            t => {
+                if let Some(Token::Assign) = self.iter.peek() {
+                    let r = self.parse_assignment(t);
                     self.skip_to_semicolon();
-                    Err(e)
+                    r
+                } else {
+                    match self.parse_expression_statement(t) {
+                        Ok(s) => Ok(s),
+                        Err(e) => {
+                            self.skip_to_semicolon();
+                            Err(e)
+                        }
+                    }
                 }
-            },
+            }
         }
+    }
+
+    fn parse_assignment(&mut self, token: &Token) -> Result<Statement, ParsingError> {
+        // first token in assignment statement has to be an identifier
+        let identifier = Expression::Identifier(match token {
+            Token::Identifier(id) => id.clone(),
+            token => return Err(ParsingError::UnexpectedToken(token.clone())),
+        });
+
+        // after identifier next token should be '='
+        match self.next_token_or_end()? {
+            Token::Assign => {}
+            token => return Err(ParsingError::UnexpectedToken(token)),
+        };
+
+        // after '=' next token should be the start of an expression, which
+        // means it should not be ';' or EOF
+        let token = self.next_token_or_end()?;
+
+        let expression = match self.parse_expression(&token, Precedence::Lowest) {
+            Ok(exp) => exp,
+            Err(e) => return Err(e),
+        };
+
+        // after expression next token should be ';'
+        match self.iter.peek() {
+            Some(Token::Semicolon) => {}
+            Some(token) => return Err(ParsingError::UnexpectedToken(token.clone())),
+            None => return Err(ParsingError::UnexpectedEof),
+        }
+
+        Ok(Statement::Assignment(identifier, expression))
     }
 
     fn parse_let(&mut self) -> Result<Statement, ParsingError> {

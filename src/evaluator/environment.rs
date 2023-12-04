@@ -28,16 +28,27 @@ impl Environment {
         // checking `store` before `outer` means a variable in the inner scope with
         // the same name as a variable in the outer scope will SHADOW that variable
         // in the outer scope.
-        match self.store.get(key) {
+        let result = match self.store.get(key) {
             Some(val) => Some(Rc::clone(val)),
             None => match &self.outer {
                 Some(outer) => outer.borrow().get(key),
                 None => None,
             },
-        }
+        };
+
+        result
     }
 
     pub fn set(&mut self, key: &str, val: Rc<Object>) {
+        if self.store.get(key).is_some() {
+            self.store.insert(key.to_string(), Rc::clone(&val));
+            return;
+        } else if let Some(outer) = &self.outer {
+            if outer.borrow().get(key).is_some() {
+                outer.borrow_mut().set(key, Rc::clone(&val));
+                return;
+            }
+        }
         self.store.insert(key.to_string(), Rc::clone(&val));
     }
 }

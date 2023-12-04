@@ -7,6 +7,7 @@ pub enum Statement {
     Return(Expression),
     Expression(Expression),
     BlockStatement(Vec<Statement>),
+    Assignment(Expression, Expression),
 }
 
 #[derive(Clone, Debug, PartialEq)]

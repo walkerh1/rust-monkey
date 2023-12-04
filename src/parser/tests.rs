@@ -1073,3 +1073,18 @@ fn test_while_expression_parses() {
     let result = Parser::parse_program(input).ok().unwrap();
     assert_eq!(result, expected);
 }
+
+#[test]
+fn test_assignment_expression_parses() {
+    let input = "i = i + 1;";
+    let expected = Program(vec![Statement::Assignment(
+        Expression::Identifier(String::from("i")),
+        Expression::Infix(
+            Box::new(Expression::Identifier(String::from("i"))),
+            Infix::Plus,
+            Box::new(Expression::Integer(1)),
+        ),
+    )]);
+    let result = Parser::parse_program(input).ok().unwrap();
+    assert_eq!(result, expected);
+}

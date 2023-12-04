@@ -45,7 +45,27 @@ fn eval_statement(
         Statement::Return(exp) => Rc::new(Object::Return(Rc::clone(&eval_expression(exp, env)?))),
         Statement::Expression(exp) => eval_expression(exp, env)?,
         Statement::BlockStatement(statements) => eval_block_statement(statements, env)?,
+        Statement::Assignment(id, val) => {
+            eval_assignment_statement(id, val, env)?;
+            Rc::new(Object::Null)
+        }
     })
+}
+
+fn eval_assignment_statement(
+    id: &Expression,
+    val: &Expression,
+    env: Rc<RefCell<Environment>>,
+) -> Result<(), EvalError> {
+    if let Expression::Identifier(key) = id {
+        if env.borrow().get(key).is_none() {
+            println!("{key}");
+            return Err(EvalError::UnrecognisedIdentifier);
+        }
+        let value = eval_expression(val, Rc::clone(&env))?;
+        env.borrow_mut().set(key, value);
+    }
+    Ok(())
 }
 
 fn eval_let_statement(
@@ -110,13 +130,11 @@ fn eval_while_expression(
 
     loop {
         let check = condition.clone();
-
         if !is_truthy(&*eval_expression(&check, Rc::clone(&env))?) {
             break;
         }
 
         result = eval_statement(loop_block, Rc::clone(&env))?;
-
         if let Object::Return(_) = &*result {
             break;
         }
