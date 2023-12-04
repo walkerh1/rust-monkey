@@ -781,3 +781,19 @@ fn test_eval_hash_index_expression_five() {
     let result = parse_and_eval(input).ok().unwrap();
     assert_eq!(result, expected);
 }
+
+#[test]
+fn test_eval_and_operator() {
+    let input = "false || true";
+    let expected = Rc::new(Object::Boolean(true));
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_eval_and_operator_with_truthy_and_falsy_values() {
+    let input = "1 || 0";
+    let expected = Rc::new(Object::Boolean(true));
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}

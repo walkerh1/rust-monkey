@@ -291,6 +291,12 @@ fn eval_infix_expression(
         (Object::Boolean(left_bool), Infix::NotEqual, Object::Boolean(right_bool)) => {
             Rc::new(Object::Boolean(left_bool != right_bool))
         }
+        (Object::Boolean(left_bool), Infix::And, Object::Boolean(right_bool)) => {
+            Rc::new(Object::Boolean(*left_bool && *right_bool))
+        }
+        (Object::Boolean(left_bool), Infix::Or, Object::Boolean(right_bool)) => {
+            Rc::new(Object::Boolean(*left_bool || *right_bool))
+        }
         (Object::Boolean(_), _, Object::Boolean(_)) => return Err(EvalError::UnknownOperator),
         (Object::String(s1), Infix::Plus, Object::String(s2)) => {
             Rc::new(Object::String(format!("{s1}{s2}")))
@@ -310,6 +316,12 @@ fn eval_integer_infix_expression(left: i64, infix: &Infix, right: i64) -> Rc<Obj
         Infix::LessThan => Object::Boolean(left < right),
         Infix::Equal => Object::Boolean(left == right),
         Infix::NotEqual => Object::Boolean(left != right),
+        Infix::And => {
+            Object::Boolean(is_truthy(&Object::Integer(left)) && is_truthy(&Object::Integer(right)))
+        }
+        Infix::Or => {
+            Object::Boolean(is_truthy(&Object::Integer(left)) || is_truthy(&Object::Integer(right)))
+        }
     };
 
     Rc::new(result)

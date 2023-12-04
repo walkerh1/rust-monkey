@@ -1001,3 +1001,53 @@ fn test_hash_literal_error_if_closing_brace_missing() {
     let errors = Parser::parse_program(input).err().unwrap();
     assert_eq!(errors, expected_errors);
 }
+
+#[test]
+fn test_logical_infix_operators() {
+    let input = "true || true; a && b";
+    let expected = Program(vec![
+        Statement::Expression(Expression::Infix(
+            Box::new(Expression::Boolean(true)),
+            Infix::Or,
+            Box::new(Expression::Boolean(true)),
+        )),
+        Statement::Expression(Expression::Infix(
+            Box::new(Expression::Identifier(String::from("a"))),
+            Infix::And,
+            Box::new(Expression::Identifier(String::from("b"))),
+        )),
+    ]);
+    let result = Parser::parse_program(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_logical_infix_operator_error_if_missing_operand() {
+    let input = "&& a; a ||;";
+    let expected_errors = vec![
+        ParsingError::InvalidPrefixOperator(Token::And),
+        ParsingError::UnexpectedSemicolon,
+    ];
+    let errors = Parser::parse_program(input).err().unwrap();
+    assert_eq!(errors, expected_errors);
+}
+
+#[test]
+fn test_logical_infix_operator_precedence() {
+    let input = "1 == 0 || 2 < 9";
+    let expected = Program(vec![Statement::Expression(Expression::Infix(
+        Box::new(Expression::Infix(
+            Box::new(Expression::Integer(1)),
+            Infix::Equal,
+            Box::new(Expression::Integer(0)),
+        )),
+        Infix::Or,
+        Box::new(Expression::Infix(
+            Box::new(Expression::Integer(2)),
+            Infix::LessThan,
+            Box::new(Expression::Integer(9)),
+        )),
+    ))]);
+    let result = Parser::parse_program(input).ok().unwrap();
+    assert_eq!(result, expected);
+}

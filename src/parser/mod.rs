@@ -222,7 +222,9 @@ impl<'a> Parser<'a> {
                     | Token::Lt
                     | Token::Gt
                     | Token::Eq
-                    | Token::Noteq => self.parse_infix_expression(left_expression, &operator)?,
+                    | Token::Noteq
+                    | Token::And
+                    | Token::Or => self.parse_infix_expression(left_expression, &operator)?,
                     Token::Lparen => self.parse_call_expression(left_expression)?,
                     Token::Lbracket => self.parse_index_expression(left_expression)?,
                     _ => break,
@@ -454,6 +456,8 @@ impl<'a> Parser<'a> {
             Token::Gt => Infix::GreaterThan,
             Token::Eq => Infix::Equal,
             Token::Noteq => Infix::NotEqual,
+            Token::And => Infix::And,
+            Token::Or => Infix::Or,
             _ => {
                 return Err(ParsingError::Generic(String::from(
                     "should never get here... fix types",

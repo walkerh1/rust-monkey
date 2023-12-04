@@ -89,6 +89,8 @@ if (5 < 10) {
 \"foo bar\";
 [1, 2];
 {\"foo\": \"bar\"};
+true && false;
+a || b;
 ";
 
     let tests = vec![
@@ -144,6 +146,14 @@ if (5 < 10) {
         Token::Colon,
         Token::String(String::from("bar")),
         Token::Rbrace,
+        Token::Semicolon,
+        Token::True,
+        Token::And,
+        Token::False,
+        Token::Semicolon,
+        Token::Identifier(String::from("a")),
+        Token::Or,
+        Token::Identifier(String::from("b")),
         Token::Semicolon,
     ];
     let tokens: Vec<_> = input.tokens().collect();

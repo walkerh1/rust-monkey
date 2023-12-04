@@ -18,6 +18,8 @@ pub enum Token {
     Gt,
     Eq,
     Noteq,
+    Or,
+    And,
 
     // delimiters
     Comma,
@@ -63,6 +65,8 @@ impl Display for Token {
                 Token::Gt => String::from(">"),
                 Token::Eq => String::from("=="),
                 Token::Noteq => String::from("!="),
+                Token::Or => String::from("||"),
+                Token::And => String::from("&&"),
                 Token::Comma => String::from(","),
                 Token::Semicolon => String::from(";"),
                 Token::Colon => String::from(":"),

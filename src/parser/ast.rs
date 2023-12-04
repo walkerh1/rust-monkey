@@ -41,4 +41,6 @@ pub enum Infix {
     LessThan,
     Equal,
     NotEqual,
+    And,
+    Or,
 }

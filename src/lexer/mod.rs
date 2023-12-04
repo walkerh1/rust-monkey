@@ -83,6 +83,24 @@ impl<'a> Iterator for LexerIter<'a> {
             '}' => Some(Token::Rbrace),
             '[' => Some(Token::Lbracket),
             ']' => Some(Token::Rbracket),
+            '&' => {
+                if let Some(c) = self.iter.peek() {
+                    if *c == '&' {
+                        self.iter.next();
+                        return Some(Token::And);
+                    }
+                }
+                Some(Token::Illegal)
+            }
+            '|' => {
+                if let Some(c) = self.iter.peek() {
+                    if *c == '|' {
+                        self.iter.next();
+                        return Some(Token::Or);
+                    }
+                }
+                Some(Token::Illegal)
+            }
             '=' => {
                 if let Some(c) = self.iter.peek() {
                     if *c == '=' {
