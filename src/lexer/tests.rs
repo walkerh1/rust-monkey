@@ -91,6 +91,7 @@ if (5 < 10) {
 {\"foo\": \"bar\"};
 true && false;
 a || b;
+while (x < 0) { x + x; }
 ";
 
     let tests = vec![
@@ -155,6 +156,18 @@ a || b;
         Token::Or,
         Token::Identifier(String::from("b")),
         Token::Semicolon,
+        Token::While,
+        Token::Lparen,
+        Token::Identifier(String::from("x")),
+        Token::Lt,
+        Token::Int(String::from("0")),
+        Token::Rparen,
+        Token::Lbrace,
+        Token::Identifier(String::from("x")),
+        Token::Plus,
+        Token::Identifier(String::from("x")),
+        Token::Semicolon,
+        Token::Rbrace,
     ];
     let tokens: Vec<_> = input.tokens().collect();
     assert_eq!(tests, tokens);

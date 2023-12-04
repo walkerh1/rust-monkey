@@ -23,6 +23,7 @@ pub enum Expression {
     Array(Vec<Expression>),
     Index(Box<Expression>, Box<Expression>),
     Hash(Vec<(Expression, Expression)>),
+    While(Box<Expression>, Box<Statement>),
 }
 
 #[derive(Clone, Debug, PartialEq)]

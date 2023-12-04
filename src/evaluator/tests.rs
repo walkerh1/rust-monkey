@@ -783,7 +783,7 @@ fn test_eval_hash_index_expression_five() {
 }
 
 #[test]
-fn test_eval_and_operator() {
+fn test_eval_or_operator() {
     let input = "false || true";
     let expected = Rc::new(Object::Boolean(true));
     let result = parse_and_eval(input).ok().unwrap();
@@ -791,9 +791,55 @@ fn test_eval_and_operator() {
 }
 
 #[test]
-fn test_eval_and_operator_with_truthy_and_falsy_values() {
+fn test_eval_and_operator() {
+    let input = "false && true";
+    let expected = Rc::new(Object::Boolean(false));
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_eval_or_operator_with_truthy_and_falsy_values() {
     let input = "1 || 0";
     let expected = Rc::new(Object::Boolean(true));
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_eval_and_operator_with_truthy_and_falsy_values() {
+    let input = "1 && 0";
+    let expected = Rc::new(Object::Boolean(false));
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_eval_while_loop() {
+    let input = "
+let i = 0;
+while (i < 3) {
+    let i = i + 1;
+}
+return i;
+";
+    let expected = Rc::new(Object::Integer(3));
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_eval_while_loop_early_return() {
+    let input = "
+let i = 0;
+while (true) {
+    let i = i + 1;
+    if (i == 3) {
+        return i;
+    }
+}
+";
+    let expected = Rc::new(Object::Integer(3));
     let result = parse_and_eval(input).ok().unwrap();
     assert_eq!(result, expected);
 }

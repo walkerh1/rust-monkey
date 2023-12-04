@@ -95,7 +95,34 @@ fn eval_expression(
         Expression::Array(elements) => eval_array_literal(elements, env),
         Expression::Index(exp, index) => eval_index_expression(exp, index, env),
         Expression::Hash(pairs) => eval_hash_literal(pairs, env),
+        Expression::While(condition, loop_block) => {
+            eval_while_expression(condition, loop_block, env)
+        }
     }
+}
+
+fn eval_while_expression(
+    condition: &Expression,
+    loop_block: &Statement,
+    env: Rc<RefCell<Environment>>,
+) -> Result<Rc<Object>, EvalError> {
+    let mut result = Rc::new(Object::Null);
+
+    loop {
+        let check = condition.clone();
+
+        if !is_truthy(&*eval_expression(&check, Rc::clone(&env))?) {
+            break;
+        }
+
+        result = eval_statement(loop_block, Rc::clone(&env))?;
+
+        if let Object::Return(_) = &*result {
+            break;
+        }
+    }
+
+    Ok(result)
 }
 
 fn eval_hash_literal(

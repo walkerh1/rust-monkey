@@ -131,6 +131,7 @@ impl<'a> Iterator for LexerIter<'a> {
                         "if" => Some(Token::If),
                         "else" => Some(Token::Else),
                         "return" => Some(Token::Return),
+                        "while" => Some(Token::While),
                         _ => Some(Token::Identifier(word)),
                     }
                 } else if ch.is_ascii_digit() {

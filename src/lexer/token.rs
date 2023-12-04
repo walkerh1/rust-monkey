@@ -40,6 +40,7 @@ pub enum Token {
     If,
     Else,
     Return,
+    While,
 
     // misc
     Illegal,
@@ -83,6 +84,7 @@ impl Display for Token {
                 Token::If => String::from("if"),
                 Token::Else => String::from("else"),
                 Token::Return => String::from("return"),
+                Token::While => String::from("while"),
                 Token::Illegal => String::from("illegal token"),
                 Token::Eof => String::from("EOF"),
             }

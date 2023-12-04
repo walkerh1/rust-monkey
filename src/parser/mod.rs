@@ -202,6 +202,7 @@ impl<'a> Parser<'a> {
             Token::String(string) => Self::parse_string(string),
             Token::Lbracket => self.parse_array_literal(),
             Token::Lbrace => self.parse_hash_literal(),
+            Token::While => self.parse_while_expression(),
             _ => return Err(ParsingError::InvalidPrefixOperator(token.clone())),
         }?;
 
@@ -235,6 +236,21 @@ impl<'a> Parser<'a> {
         }
 
         Ok(left_expression)
+    }
+
+    fn parse_while_expression(&mut self) -> Result<Expression, ParsingError> {
+        // get and expect next token to be '(' after 'if'
+        let token = match self.next_token_or_end()? {
+            Token::Lparen => Token::Lparen,
+            t => return Err(ParsingError::UnexpectedToken(t)),
+        };
+
+        // expect grouped expression after 'if' token
+        let condition = self.parse_expression(&token, Precedence::Lowest)?;
+
+        let loop_block = Box::new(self.parse_block_statement()?);
+
+        Ok(Expression::While(Box::new(condition), loop_block))
     }
 
     fn parse_hash_literal(&mut self) -> Result<Expression, ParsingError> {

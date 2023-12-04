@@ -1051,3 +1051,25 @@ fn test_logical_infix_operator_precedence() {
     let result = Parser::parse_program(input).ok().unwrap();
     assert_eq!(result, expected);
 }
+
+#[test]
+fn test_while_expression_parses() {
+    let input = "while (i < 10) { let i = i + 1; }";
+    let expected = Program(vec![Statement::Expression(Expression::While(
+        Box::new(Expression::Infix(
+            Box::new(Expression::Identifier(String::from("i"))),
+            Infix::LessThan,
+            Box::new(Expression::Integer(10)),
+        )),
+        Box::new(Statement::BlockStatement(vec![Statement::Let(
+            Expression::Identifier(String::from("i")),
+            Expression::Infix(
+                Box::new(Expression::Identifier(String::from("i"))),
+                Infix::Plus,
+                Box::new(Expression::Integer(1)),
+            ),
+        )])),
+    ))]);
+    let result = Parser::parse_program(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
