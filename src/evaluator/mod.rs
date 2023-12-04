@@ -1,8 +1,9 @@
 use crate::evaluator::builtin::Builtin;
 use crate::evaluator::environment::Environment;
-use crate::evaluator::object::{Function, Object};
+use crate::evaluator::object::{Function, Hashable, Object};
 use crate::parser::ast::{Expression, Infix, Prefix, Program, Statement};
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::rc::Rc;
 
 mod builtin;
@@ -88,14 +89,36 @@ fn eval_expression(
         Expression::If(condition, if_block, else_block) => {
             eval_if_expression(condition, if_block, else_block, env)
         }
-        Expression::Function(parameters, body) => {
-            eval_function_definition_expression(parameters, body, env)
-        }
+        Expression::Function(parameters, body) => eval_function_expression(parameters, body, env),
         Expression::Call(func, args) => eval_function_call_expression(func, args, env),
         Expression::String(string) => Ok(Rc::new(Object::String(string.clone()))),
         Expression::Array(elements) => eval_array_literal(elements, env),
         Expression::Index(exp, index) => eval_index_expression(exp, index, env),
+        Expression::Hash(pairs) => eval_hash_literal(pairs, env),
     }
+}
+
+fn eval_hash_literal(
+    pairs: &[(Expression, Expression)],
+    env: Rc<RefCell<Environment>>,
+) -> Result<Rc<Object>, EvalError> {
+    let mut map = HashMap::new();
+
+    for (k, v) in pairs.iter() {
+        let key = eval_expression(k, Rc::clone(&env))?;
+        let value = eval_expression(v, Rc::clone(&env))?;
+
+        let key = match &*key {
+            Object::String(key) => Hashable::String(key.clone()),
+            Object::Integer(key) => Hashable::Integer(*key),
+            Object::Boolean(key) => Hashable::Boolean(*key),
+            _ => return Err(EvalError::IncompatibleTypes),
+        };
+
+        map.insert(key, value);
+    }
+
+    Ok(Rc::new(Object::Hash(map)))
 }
 
 fn eval_index_expression(
@@ -103,10 +126,10 @@ fn eval_index_expression(
     index: &Expression,
     env: Rc<RefCell<Environment>>,
 ) -> Result<Rc<Object>, EvalError> {
-    let array = eval_expression(exp, Rc::clone(&env))?;
+    let collection = eval_expression(exp, Rc::clone(&env))?;
     let index = eval_expression(index, Rc::clone(&env))?;
 
-    match &*array {
+    match &*collection {
         Object::Array(array) => match &*index {
             Object::Integer(idx) => {
                 if *idx < 0 || *idx as usize >= array.len() {
@@ -118,6 +141,21 @@ fn eval_index_expression(
             }
             _ => Err(EvalError::IncompatibleTypes),
         },
+        Object::Hash(map) => Ok(match &*index {
+            Object::String(key) => match map.get(&Hashable::String(key.clone())) {
+                Some(object) => Rc::clone(object),
+                None => Rc::new(Object::Null),
+            },
+            Object::Integer(key) => match map.get(&Hashable::Integer(*key)) {
+                Some(object) => Rc::clone(object),
+                None => Rc::new(Object::Null),
+            },
+            Object::Boolean(key) => match map.get(&Hashable::Boolean(*key)) {
+                Some(object) => Rc::clone(object),
+                None => Rc::new(Object::Null),
+            },
+            _ => return Err(EvalError::IncompatibleTypes),
+        }),
         _ => Err(EvalError::IncompatibleTypes),
     }
 }
@@ -178,7 +216,7 @@ fn apply_function(func: Rc<Object>, args: &[Rc<Object>]) -> Result<Rc<Object>, E
     }
 }
 
-fn eval_function_definition_expression(
+fn eval_function_expression(
     parameters: &[Expression],
     body: &Statement,
     env: Rc<RefCell<Environment>>,

@@ -75,6 +75,7 @@ impl<'a> Iterator for LexerIter<'a> {
             '<' => Some(Token::Lt),
             '>' => Some(Token::Gt),
             ';' => Some(Token::Semicolon),
+            ':' => Some(Token::Colon),
             '(' => Some(Token::Lparen),
             ')' => Some(Token::Rparen),
             ',' => Some(Token::Comma),

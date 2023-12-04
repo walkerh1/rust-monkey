@@ -896,3 +896,108 @@ fn test_index_expression_errors() {
     let errors = Parser::parse_program(input).err().unwrap();
     assert_eq!(errors, expected_errors);
 }
+
+#[test]
+fn test_hash_literal() {
+    let input = "{\"one\": 1, \"two\": 2, \"three\": 3}";
+    let expected = Program(vec![Statement::Expression(Expression::Hash(vec![
+        (
+            Expression::String(String::from("one")),
+            Expression::Integer(1),
+        ),
+        (
+            Expression::String(String::from("two")),
+            Expression::Integer(2),
+        ),
+        (
+            Expression::String(String::from("three")),
+            Expression::Integer(3),
+        ),
+    ]))]);
+    let result = Parser::parse_program(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_hash_literal_empty() {
+    let input = "{}";
+    let expected = Program(vec![Statement::Expression(Expression::Hash(vec![]))]);
+    let result = Parser::parse_program(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_hash_literal_with_expressions() {
+    let input = "{\"one\": 0 + 1, \"two\": 10 - 8, \"three\": 15 / 5}";
+    let expected = Program(vec![Statement::Expression(Expression::Hash(vec![
+        (
+            Expression::String(String::from("one")),
+            Expression::Infix(
+                Box::new(Expression::Integer(0)),
+                Infix::Plus,
+                Box::new(Expression::Integer(1)),
+            ),
+        ),
+        (
+            Expression::String(String::from("two")),
+            Expression::Infix(
+                Box::new(Expression::Integer(10)),
+                Infix::Minus,
+                Box::new(Expression::Integer(8)),
+            ),
+        ),
+        (
+            Expression::String(String::from("three")),
+            Expression::Infix(
+                Box::new(Expression::Integer(15)),
+                Infix::Divide,
+                Box::new(Expression::Integer(5)),
+            ),
+        ),
+    ]))]);
+    let result = Parser::parse_program(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_hash_literal_with_infix_expression_keys() {
+    let input = "{2 + 2: 15 / 5}";
+    let expected = Program(vec![Statement::Expression(Expression::Hash(vec![(
+        Expression::Infix(
+            Box::new(Expression::Integer(2)),
+            Infix::Plus,
+            Box::new(Expression::Integer(2)),
+        ),
+        Expression::Infix(
+            Box::new(Expression::Integer(15)),
+            Infix::Divide,
+            Box::new(Expression::Integer(5)),
+        ),
+    )]))]);
+    let result = Parser::parse_program(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_hash_literal_error_if_colon_missing() {
+    let input = "{ 1: 2, 3: 4, 5 6}";
+    let expected_errors = vec![ParsingError::UnexpectedToken(Token::Int(String::from("6")))];
+    let errors = Parser::parse_program(input).err().unwrap();
+    assert_eq!(errors, expected_errors);
+}
+
+#[test]
+fn test_hash_literal_error_if_comma_missing() {
+    let input = "{ 1: 2, 3: 4 5: 6}";
+    let expected_errors = vec![ParsingError::UnexpectedToken(Token::Int(String::from("5")))];
+    let errors = Parser::parse_program(input).err().unwrap();
+    assert_eq!(errors, expected_errors);
+}
+
+#[test]
+fn test_hash_literal_error_if_closing_brace_missing() {
+    let input = "{ 1: 2, 3: 4, 5: 6";
+    let expected_errors = vec![ParsingError::UnexpectedEof];
+    let errors = Parser::parse_program(input).err().unwrap();
+    assert_eq!(errors, expected_errors);
+}

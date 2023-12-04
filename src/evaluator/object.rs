@@ -2,6 +2,7 @@ use crate::evaluator::builtin::Builtin;
 use crate::evaluator::environment::Environment;
 use crate::parser::ast::Statement;
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 use std::rc::Rc;
 
@@ -15,6 +16,7 @@ pub enum Object {
     Function(Function),
     Builtin(Builtin),
     Array(Vec<Rc<Object>>),
+    Hash(HashMap<Hashable, Rc<Object>>),
 }
 
 impl Display for Object {
@@ -38,6 +40,14 @@ impl Display for Object {
                         .collect::<Vec<_>>()
                         .join(", ")
                 ),
+                Object::Hash(pairs) => format!(
+                    "{{{}}}",
+                    pairs
+                        .iter()
+                        .map(|(k, v)| format!("{}: {}", k, v))
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                ),
             }
         )
     }
@@ -48,4 +58,25 @@ pub struct Function {
     pub parameters: Vec<String>,
     pub body: Statement,
     pub env: Rc<RefCell<Environment>>,
+}
+
+#[derive(Debug, Eq, Hash, PartialEq)]
+pub enum Hashable {
+    String(String),
+    Integer(i64),
+    Boolean(bool),
+}
+
+impl Display for Hashable {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Hashable::String(key) => format!("\"{}\"", key),
+                Hashable::Integer(key) => key.to_string(),
+                Hashable::Boolean(key) => key.to_string(),
+            }
+        )
+    }
 }

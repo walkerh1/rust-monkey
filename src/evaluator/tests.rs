@@ -1,11 +1,12 @@
 #![cfg(test)]
 
 use crate::evaluator::environment::Environment;
-use crate::evaluator::object::{Function, Object};
+use crate::evaluator::object::{Function, Hashable, Object};
 use crate::evaluator::{eval, EvalError};
 use crate::parser::ast::{Expression, Infix, Statement};
 use crate::parser::Parser;
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::rc::Rc;
 
 fn parse_and_eval(input: &str) -> Result<Rc<Object>, EvalError> {
@@ -706,4 +707,77 @@ fn test_eval_builtin_push_error_if_wrong_number_of_args() {
     let expected_error = EvalError::IncorrectNumberOfArgs;
     let error = parse_and_eval(input).err().unwrap();
     assert_eq!(error, expected_error);
+}
+
+#[test]
+fn test_eval_hash_literal() {
+    let input = "
+let two = \"two\";
+{
+    \"one\": 10 - 9,
+    two: 1 + 1,
+    \"three\": 3,
+    2 + 2: 4,
+    true: 5,
+    false: 6
+}";
+    let expected = Rc::new(Object::Hash(HashMap::from([
+        (
+            Hashable::String(String::from("one")),
+            Rc::new(Object::Integer(1)),
+        ),
+        (
+            Hashable::String(String::from("two")),
+            Rc::new(Object::Integer(2)),
+        ),
+        (
+            Hashable::String(String::from("three")),
+            Rc::new(Object::Integer(3)),
+        ),
+        (Hashable::Integer(4), Rc::new(Object::Integer(4))),
+        (Hashable::Boolean(true), Rc::new(Object::Integer(5))),
+        (Hashable::Boolean(false), Rc::new(Object::Integer(6))),
+    ])));
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_eval_hash_index_expression_one() {
+    let input = "{\"one\": 1}[\"one\"]";
+    let expected = Rc::new(Object::Integer(1));
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_eval_hash_index_expression_two() {
+    let input = "{1 + 1: 1}[2]";
+    let expected = Rc::new(Object::Integer(1));
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_eval_hash_index_expression_three() {
+    let input = "{true: 1}[true]";
+    let expected = Rc::new(Object::Integer(1));
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_eval_hash_index_expression_four() {
+    let input = "let map = {\"one\": 1}; map[\"one\"]";
+    let expected = Rc::new(Object::Integer(1));
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_eval_hash_index_expression_five() {
+    let input = "{0: 1}[3]";
+    let expected = Rc::new(Object::Null);
+    let result = parse_and_eval(input).ok().unwrap();
+    assert_eq!(result, expected);
 }

@@ -200,7 +200,8 @@ impl<'a> Parser<'a> {
             Token::If => self.parse_if_expression(),
             Token::Function => self.parse_function_literal(),
             Token::String(string) => Self::parse_string(string),
-            Token::Lbracket => self.parse_array_expression(),
+            Token::Lbracket => self.parse_array_literal(),
+            Token::Lbrace => self.parse_hash_literal(),
             _ => return Err(ParsingError::InvalidPrefixOperator(token.clone())),
         }?;
 
@@ -234,6 +235,40 @@ impl<'a> Parser<'a> {
         Ok(left_expression)
     }
 
+    fn parse_hash_literal(&mut self) -> Result<Expression, ParsingError> {
+        let mut hash = vec![];
+
+        loop {
+            let mut curr_token = self.next_token_or_end()?;
+            if curr_token == Token::Rbrace {
+                break;
+            }
+
+            let key = self.parse_expression(&curr_token, Precedence::Lowest)?;
+
+            curr_token = self.next_token_or_end()?;
+            if curr_token != Token::Colon {
+                return Err(ParsingError::UnexpectedToken(curr_token));
+            }
+
+            curr_token = self.next_token_or_end()?;
+            let value = self.parse_expression(&curr_token, Precedence::Lowest)?;
+
+            hash.push((key, value));
+
+            match self.iter.peek() {
+                Some(Token::Comma) => {
+                    self.next_token_or_end()?;
+                }
+                Some(Token::Rbrace) => continue,
+                Some(token) => return Err(ParsingError::UnexpectedToken(token.clone())),
+                None => return Err(ParsingError::UnexpectedEof),
+            }
+        }
+
+        Ok(Expression::Hash(hash))
+    }
+
     fn parse_index_expression(&mut self, left: Expression) -> Result<Expression, ParsingError> {
         if let Some(Token::Rbracket) = self.iter.peek() {
             return Err(ParsingError::UnexpectedToken(Token::Rbracket));
@@ -250,7 +285,7 @@ impl<'a> Parser<'a> {
         Ok(Expression::Index(Box::new(left), Box::new(right)))
     }
 
-    fn parse_array_expression(&mut self) -> Result<Expression, ParsingError> {
+    fn parse_array_literal(&mut self) -> Result<Expression, ParsingError> {
         if let Some(Token::Rbracket) = self.iter.peek() {
             self.next_token_or_end()?;
             return Ok(Expression::Array(vec![]));
@@ -291,7 +326,7 @@ impl<'a> Parser<'a> {
             .map_err(|_| ParsingError::InvalidInteger(int.to_string()))
     }
 
-    fn parse_string(string: &str) -> Result<Expression, crate::parser::ParsingError> {
+    fn parse_string(string: &str) -> Result<Expression, ParsingError> {
         Ok(Expression::String(string.to_string()))
     }
 

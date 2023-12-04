@@ -22,6 +22,7 @@ pub enum Expression {
     String(String),
     Array(Vec<Expression>),
     Index(Box<Expression>, Box<Expression>),
+    Hash(Vec<(Expression, Expression)>),
 }
 
 #[derive(Clone, Debug, PartialEq)]

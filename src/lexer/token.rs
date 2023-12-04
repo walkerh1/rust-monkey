@@ -22,6 +22,7 @@ pub enum Token {
     // delimiters
     Comma,
     Semicolon,
+    Colon,
     Lparen,
     Rparen,
     Lbrace,
@@ -64,6 +65,7 @@ impl Display for Token {
                 Token::Noteq => String::from("!="),
                 Token::Comma => String::from(","),
                 Token::Semicolon => String::from(";"),
+                Token::Colon => String::from(":"),
                 Token::Lparen => String::from("("),
                 Token::Rparen => String::from(")"),
                 Token::Lbrace => String::from("{"),

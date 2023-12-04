@@ -85,9 +85,10 @@ if (5 < 10) {
 
 10 == 10;
 10 != 9;
-\"foobar\"
-\"foo bar\"
-[1, 2]
+\"foobar\";
+\"foo bar\";
+[1, 2];
+{\"foo\": \"bar\"};
 ";
 
     let tests = vec![
@@ -129,12 +130,21 @@ if (5 < 10) {
         Token::Int(String::from("9")),
         Token::Semicolon,
         Token::String(String::from("foobar")),
+        Token::Semicolon,
         Token::String(String::from("foo bar")),
+        Token::Semicolon,
         Token::Lbracket,
         Token::Int(String::from("1")),
         Token::Comma,
         Token::Int(String::from("2")),
         Token::Rbracket,
+        Token::Semicolon,
+        Token::Lbrace,
+        Token::String(String::from("foo")),
+        Token::Colon,
+        Token::String(String::from("bar")),
+        Token::Rbrace,
+        Token::Semicolon,
     ];
     let tokens: Vec<_> = input.tokens().collect();
     assert_eq!(tests, tokens);
