@@ -2,13 +2,14 @@ use crate::evaluator::object::Object;
 use crate::evaluator::EvalError;
 use std::rc::Rc;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 pub enum Builtin {
     Len,
     First,
     Last,
     Rest,
     Push,
+    Puts,
 }
 
 impl Builtin {
@@ -19,6 +20,7 @@ impl Builtin {
             "last" => Rc::new(Object::Builtin(Builtin::Last)),
             "rest" => Rc::new(Object::Builtin(Builtin::Rest)),
             "push" => Rc::new(Object::Builtin(Builtin::Push)),
+            "puts" => Rc::new(Object::Builtin(Builtin::Puts)),
             _ => return None,
         })
     }
@@ -98,6 +100,12 @@ impl Builtin {
                 } else {
                     return Err(EvalError::IncompatibleTypes);
                 }
+            }
+            Builtin::Puts => {
+                for arg in args {
+                    println!("{arg}");
+                }
+                Rc::new(Object::Null)
             }
         })
     }
