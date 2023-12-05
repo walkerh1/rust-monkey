@@ -59,7 +59,6 @@ fn eval_assignment_statement(
 ) -> Result<(), EvalError> {
     if let Expression::Identifier(key) = id {
         if env.borrow().get(key).is_none() {
-            println!("{key}");
             return Err(EvalError::UnrecognisedIdentifier);
         }
         let value = eval_expression(val, Rc::clone(&env))?;

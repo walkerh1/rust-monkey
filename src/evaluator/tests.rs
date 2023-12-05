@@ -880,7 +880,5 @@ counter();
 ";
     let expected = Rc::new(Object::Integer(3));
     let result = parse_and_eval(input).ok().unwrap();
-    // let result = parse_and_eval(input).err().unwrap();
-    // println!("{result:?}");
     assert_eq!(result, expected);
 }
