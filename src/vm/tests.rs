@@ -107,3 +107,21 @@ fn test_vm_integer_arithmetic_eight() {
     assert_eq!(error, None);
     assert_eq!(result, Some(expected));
 }
+
+#[test]
+fn test_vm_boolean_true() {
+    let input = "true";
+    let expected = Rc::new(Object::Boolean(true));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_vm_boolean_false() {
+    let input = "false";
+    let expected = Rc::new(Object::Boolean(false));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}

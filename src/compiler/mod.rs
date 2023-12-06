@@ -54,7 +54,13 @@ impl Compiler {
             Expression::Infix(left, infix, right) => {
                 self.compile_infix_expression(left, infix, right)?
             }
-            Expression::Boolean(_) => todo!(),
+            Expression::Boolean(value) => {
+                if *value {
+                    self.emit(OpCode::True, &[]);
+                } else {
+                    self.emit(OpCode::False, &[]);
+                }
+            }
             Expression::If(_, _, _) => todo!(),
             Expression::Function(_, _) => todo!(),
             Expression::Call(_, _) => todo!(),

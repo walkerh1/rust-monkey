@@ -7,6 +7,9 @@ mod tests;
 
 const STACK_SIZE: usize = 2048; // 2KB
 
+const TRUE: Object = Object::Boolean(true);
+const FALSE: Object = Object::Boolean(false);
+
 #[derive(Debug, PartialEq)]
 pub struct VirtualMachine {
     stack: Vec<Rc<Object>>,
@@ -43,6 +46,12 @@ impl VirtualMachine {
                         }
                         _ => return Err(VmError::IncompatibleTypes),
                     }
+                }
+                OpCode::True => {
+                    vm.push(&Rc::new(TRUE))?;
+                }
+                OpCode::False => {
+                    vm.push(&Rc::new(FALSE))?;
                 }
                 OpCode::Pop => {
                     last_popped = Some(vm.pop()?);

@@ -137,3 +137,23 @@ fn test_compile_nested_integer_expression() {
     assert_eq!(error, None);
     assert_eq!(byte_code, Some(expected));
 }
+
+#[test]
+fn test_compile_boolean() {
+    let input = "true; false";
+    let expected = ByteCode(
+        vec![
+            make(OpCode::True, &[]),
+            make(OpCode::Pop, &[]),
+            make(OpCode::False, &[]),
+            make(OpCode::Pop, &[]),
+        ]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<u8>>(),
+        vec![],
+    );
+    let (byte_code, error) = parse_and_compile(input);
+    assert_eq!(error, None);
+    assert_eq!(byte_code, Some(expected));
+}

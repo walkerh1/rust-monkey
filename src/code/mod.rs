@@ -14,6 +14,8 @@ pub enum OpCode {
     Subtract,
     Multiply,
     Divide,
+    True,
+    False,
 }
 
 impl Display for OpCode {
@@ -28,6 +30,8 @@ impl Display for OpCode {
                 OpCode::Subtract => "OpSubtract",
                 OpCode::Multiply => "OpMultiply",
                 OpCode::Divide => "OpDivide",
+                OpCode::True => "OpTrue",
+                OpCode::False => "OpFalse",
             }
         )
     }
@@ -44,6 +48,8 @@ impl TryFrom<u8> for OpCode {
             0x03 => Ok(OpCode::Subtract),
             0x04 => Ok(OpCode::Multiply),
             0x05 => Ok(OpCode::Divide),
+            0x06 => Ok(OpCode::True),
+            0x07 => Ok(OpCode::False),
             _ => Err("Invalid OpCode"),
         }
     }
@@ -58,6 +64,8 @@ impl From<OpCode> for u8 {
             OpCode::Subtract => 0x03,
             OpCode::Multiply => 0x04,
             OpCode::Divide => 0x05,
+            OpCode::True => 0x06,
+            OpCode::False => 0x07,
         }
     }
 }
@@ -71,7 +79,13 @@ pub fn make(op: OpCode, operands: &[u32]) -> [u8; 4] {
             instruction[1] = operand[0];
             instruction[2] = operand[1];
         }
-        OpCode::Add | OpCode::Pop | OpCode::Subtract | OpCode::Multiply | OpCode::Divide => {
+        OpCode::Add
+        | OpCode::Pop
+        | OpCode::Subtract
+        | OpCode::Multiply
+        | OpCode::Divide
+        | OpCode::True
+        | OpCode::False => {
             instruction[0] = u8::from(op);
         }
     }
@@ -88,9 +102,13 @@ pub fn disassemble(instructions: &Instructions) -> String {
                 let operand = read_u16(&word[1..=2]);
                 assembly.push_str(&format!("{:04x} {} {}\n", address, op, operand))
             }
-            OpCode::Add | OpCode::Pop | OpCode::Subtract | OpCode::Multiply | OpCode::Divide => {
-                assembly.push_str(&format!("{:04x} {}\n", address, op))
-            }
+            OpCode::Add
+            | OpCode::Pop
+            | OpCode::Subtract
+            | OpCode::Multiply
+            | OpCode::Divide
+            | OpCode::True
+            | OpCode::False => assembly.push_str(&format!("{:04x} {}\n", address, op)),
         }
         address += 4;
     });
