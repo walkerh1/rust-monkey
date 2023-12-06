@@ -37,9 +37,72 @@ fn test_vm_stack_overflow_not_dependent_on_number_of_statements() {
 }
 
 #[test]
-fn test_vm_integer_addition() {
+fn test_vm_integer_arithmetic_one() {
     let input = "1 + 2";
     let expected = Rc::new(Object::Integer(3));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_vm_integer_arithmetic_two() {
+    let input = "1 - 2";
+    let expected = Rc::new(Object::Integer(-1));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_vm_integer_arithmetic_three() {
+    let input = "2 * 3";
+    let expected = Rc::new(Object::Integer(6));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_vm_integer_arithmetic_four() {
+    let input = "4 / 2";
+    let expected = Rc::new(Object::Integer(2));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_vm_integer_arithmetic_five() {
+    let input = "25 / 5 * 2 - 5 + 20";
+    let expected = Rc::new(Object::Integer(25));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_vm_integer_arithmetic_six() {
+    let input = "3 * 4 + 5";
+    let expected = Rc::new(Object::Integer(17));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_vm_integer_arithmetic_seven() {
+    let input = "3 + 4 * 5";
+    let expected = Rc::new(Object::Integer(23));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_vm_integer_arithmetic_eight() {
+    let input = "(5 + 2) * 6";
+    let expected = Rc::new(Object::Integer(42));
     let (result, error) = compile_and_run(input);
     assert_eq!(error, None);
     assert_eq!(result, Some(expected));

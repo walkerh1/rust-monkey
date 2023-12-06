@@ -85,9 +85,15 @@ impl Compiler {
             Infix::Plus => {
                 self.emit(OpCode::Add, &[]);
             }
-            Infix::Minus => todo!(),
-            Infix::Multiply => todo!(),
-            Infix::Divide => todo!(),
+            Infix::Minus => {
+                self.emit(OpCode::Subtract, &[]);
+            }
+            Infix::Multiply => {
+                self.emit(OpCode::Multiply, &[]);
+            }
+            Infix::Divide => {
+                self.emit(OpCode::Divide, &[]);
+            }
             Infix::GreaterThan => todo!(),
             Infix::LessThan => todo!(),
             Infix::Equal => todo!(),

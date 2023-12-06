@@ -34,12 +34,12 @@ impl VirtualMachine {
                     let object = Rc::clone(&constants[const_index as usize]);
                     vm.push(&object)?;
                 }
-                OpCode::Add => {
+                OpCode::Add | OpCode::Subtract | OpCode::Multiply | OpCode::Divide => {
                     let right = vm.pop()?;
                     let left = vm.pop()?;
-                    match (&*right, &*left) {
-                        (Object::Integer(right_val), Object::Integer(left_val)) => {
-                            vm.push(&Rc::new(Object::Integer(right_val + left_val)))?;
+                    match (&*left, &*right) {
+                        (Object::Integer(left_val), Object::Integer(right_val)) => {
+                            vm.execute_integer_operation(*left_val, op, *right_val)?;
                         }
                         _ => return Err(VmError::IncompatibleTypes),
                     }
@@ -54,6 +54,22 @@ impl VirtualMachine {
             Some(obj) => Ok(obj),
             None => Err(VmError::EmptyStack),
         }
+    }
+
+    fn execute_integer_operation(
+        &mut self,
+        left: i64,
+        op_code: OpCode,
+        right: i64,
+    ) -> Result<(), VmError> {
+        let result = match op_code {
+            OpCode::Add => left + right,
+            OpCode::Subtract => left - right,
+            OpCode::Multiply => left * right,
+            OpCode::Divide => left / right,
+            _ => return Err(VmError::IncompatibleTypes),
+        };
+        self.push(&Rc::new(Object::Integer(result)))
     }
 
     fn push(&mut self, object: &Rc<Object>) -> Result<(), VmError> {
