@@ -125,3 +125,129 @@ fn test_vm_boolean_false() {
     assert_eq!(error, None);
     assert_eq!(result, Some(expected));
 }
+
+#[test]
+fn test_vm_boolean_expression_one() {
+    let input = "1 < 2";
+    let expected = Rc::new(Object::Boolean(true));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_vm_boolean_expression_two() {
+    let input = "1 > 2";
+    let expected = Rc::new(Object::Boolean(false));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_vm_boolean_expression_three() {
+    let input = "1 == 1";
+    let expected = Rc::new(Object::Boolean(true));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_vm_boolean_expression_four() {
+    let input = "1 != 1";
+    let expected = Rc::new(Object::Boolean(false));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_vm_boolean_expression_five() {
+    let input = "true == true";
+    let expected = Rc::new(Object::Boolean(true));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_vm_boolean_expression_six() {
+    let input = "true == false";
+    let expected = Rc::new(Object::Boolean(false));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_vm_boolean_expression_seven() {
+    let input = "true != false";
+    let expected = Rc::new(Object::Boolean(true));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_vm_boolean_expression_eight() {
+    let input = "1 < 2 == true";
+    let expected = Rc::new(Object::Boolean(true));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_vm_minus_expression() {
+    let input = "-10";
+    let expected = Rc::new(Object::Integer(-10));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_vm_minus_in_infix_expression() {
+    let input = "2 + -10";
+    let expected = Rc::new(Object::Integer(-8));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_vm_bang_expression() {
+    let input = "!true";
+    let expected = Rc::new(Object::Boolean(false));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_vm_bang_in_infix_expression() {
+    let input = "!true == false";
+    let expected = Rc::new(Object::Boolean(true));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_vm_bang_expression_error_if_used_on_integer() {
+    let input = "!5";
+    let expected_error = VmError::IncompatibleTypes;
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, Some(expected_error));
+    assert_eq!(result, None);
+}
+
+#[test]
+fn test_vm_minus_expression_error_if_used_on_boolean() {
+    let input = "-true";
+    let expected_error = VmError::IncompatibleTypes;
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, Some(expected_error));
+    assert_eq!(result, None);
+}

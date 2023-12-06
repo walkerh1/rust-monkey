@@ -37,15 +37,14 @@ impl VirtualMachine {
                     let object = Rc::clone(&constants[const_index as usize]);
                     vm.push(&object)?;
                 }
-                OpCode::Add | OpCode::Subtract | OpCode::Multiply | OpCode::Divide => {
-                    let right = vm.pop()?;
-                    let left = vm.pop()?;
-                    match (&*left, &*right) {
-                        (Object::Integer(left_val), Object::Integer(right_val)) => {
-                            vm.execute_integer_operation(*left_val, op, *right_val)?;
-                        }
-                        _ => return Err(VmError::IncompatibleTypes),
-                    }
+                OpCode::Add
+                | OpCode::Subtract
+                | OpCode::Multiply
+                | OpCode::Divide
+                | OpCode::Equal
+                | OpCode::NotEqual
+                | OpCode::GreaterThan => {
+                    vm.execute_binary_expression(op)?;
                 }
                 OpCode::True => {
                     vm.push(&Rc::new(TRUE))?;
@@ -53,9 +52,16 @@ impl VirtualMachine {
                 OpCode::False => {
                     vm.push(&Rc::new(FALSE))?;
                 }
+                OpCode::Minus => {
+                    vm.execute_minus_expression()?;
+                }
+                OpCode::Bang => {
+                    vm.execute_bang_expression()?;
+                }
                 OpCode::Pop => {
                     last_popped = Some(vm.pop()?);
                 }
+                _ => todo!(),
             }
         }
 
@@ -65,6 +71,51 @@ impl VirtualMachine {
         }
     }
 
+    fn execute_minus_expression(&mut self) -> Result<(), VmError> {
+        let right = self.pop()?;
+        if let Object::Integer(int) = &*right {
+            self.push(&Rc::new(Object::Integer(-int)))?;
+        } else {
+            return Err(VmError::IncompatibleTypes);
+        }
+        Ok(())
+    }
+
+    fn execute_bang_expression(&mut self) -> Result<(), VmError> {
+        let right = self.pop()?;
+        if let Object::Boolean(boolean) = &*right {
+            let result = if *boolean { FALSE } else { TRUE };
+            self.push(&Rc::new(result))?;
+        } else {
+            return Err(VmError::IncompatibleTypes);
+        }
+        Ok(())
+    }
+
+    fn execute_binary_expression(&mut self, op: OpCode) -> Result<(), VmError> {
+        let right = self.pop()?;
+        let left = self.pop()?;
+        match (&*left, &op, &*right) {
+            (Object::Integer(left_val), _, Object::Integer(right_val)) => {
+                self.execute_integer_operation(*left_val, op, *right_val)?;
+            }
+            (Object::Boolean(left_val), OpCode::Equal, Object::Boolean(right_val)) => {
+                let result = if left_val == right_val { TRUE } else { FALSE };
+                self.push(&Rc::new(result))?;
+            }
+            (Object::Boolean(left_val), OpCode::NotEqual, Object::Boolean(right_val)) => {
+                let result = if left_val != right_val { TRUE } else { FALSE };
+                self.push(&Rc::new(result))?;
+            }
+            (Object::Boolean(left_val), OpCode::GreaterThan, Object::Boolean(right_val)) => {
+                let result = if left_val > right_val { TRUE } else { FALSE };
+                self.push(&Rc::new(result))?;
+            }
+            _ => return Err(VmError::IncompatibleTypes),
+        }
+        Ok(())
+    }
+
     fn execute_integer_operation(
         &mut self,
         left: i64,
@@ -72,13 +123,34 @@ impl VirtualMachine {
         right: i64,
     ) -> Result<(), VmError> {
         let result = match op_code {
-            OpCode::Add => left + right,
-            OpCode::Subtract => left - right,
-            OpCode::Multiply => left * right,
-            OpCode::Divide => left / right,
+            OpCode::Add => Object::Integer(left + right),
+            OpCode::Subtract => Object::Integer(left - right),
+            OpCode::Multiply => Object::Integer(left * right),
+            OpCode::Divide => Object::Integer(left / right),
+            OpCode::Equal => {
+                if left == right {
+                    TRUE
+                } else {
+                    FALSE
+                }
+            }
+            OpCode::NotEqual => {
+                if left != right {
+                    TRUE
+                } else {
+                    FALSE
+                }
+            }
+            OpCode::GreaterThan => {
+                if left > right {
+                    TRUE
+                } else {
+                    FALSE
+                }
+            }
             _ => return Err(VmError::IncompatibleTypes),
         };
-        self.push(&Rc::new(Object::Integer(result)))
+        self.push(&Rc::new(result))
     }
 
     fn push(&mut self, object: &Rc<Object>) -> Result<(), VmError> {

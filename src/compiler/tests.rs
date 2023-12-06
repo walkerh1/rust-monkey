@@ -139,13 +139,171 @@ fn test_compile_nested_integer_expression() {
 }
 
 #[test]
-fn test_compile_boolean() {
+fn test_compile_boolean_literals() {
     let input = "true; false";
     let expected = ByteCode(
         vec![
             make(OpCode::True, &[]),
             make(OpCode::Pop, &[]),
             make(OpCode::False, &[]),
+            make(OpCode::Pop, &[]),
+        ]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<u8>>(),
+        vec![],
+    );
+    let (byte_code, error) = parse_and_compile(input);
+    assert_eq!(error, None);
+    assert_eq!(byte_code, Some(expected));
+}
+
+#[test]
+fn test_compile_boolean_expression_one() {
+    let input = "1 > 2;";
+    let expected = ByteCode(
+        vec![
+            make(OpCode::Constant, &[0_u32]),
+            make(OpCode::Constant, &[1_u32]),
+            make(OpCode::GreaterThan, &[]),
+            make(OpCode::Pop, &[]),
+        ]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<u8>>(),
+        vec![Rc::new(Object::Integer(1)), Rc::new(Object::Integer(2))],
+    );
+    let (byte_code, error) = parse_and_compile(input);
+    assert_eq!(error, None);
+    assert_eq!(byte_code, Some(expected));
+}
+
+#[test]
+fn test_compile_boolean_expression_two() {
+    let input = "1 < 2;";
+    let expected = ByteCode(
+        vec![
+            make(OpCode::Constant, &[0_u32]),
+            make(OpCode::Constant, &[1_u32]),
+            make(OpCode::GreaterThan, &[]),
+            make(OpCode::Pop, &[]),
+        ]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<u8>>(),
+        vec![Rc::new(Object::Integer(2)), Rc::new(Object::Integer(1))],
+    );
+    let (byte_code, error) = parse_and_compile(input);
+    assert_eq!(error, None);
+    assert_eq!(byte_code, Some(expected));
+}
+
+#[test]
+fn test_compile_boolean_expression() {
+    let input = "1 == 2;";
+    let expected = ByteCode(
+        vec![
+            make(OpCode::Constant, &[0_u32]),
+            make(OpCode::Constant, &[1_u32]),
+            make(OpCode::Equal, &[]),
+            make(OpCode::Pop, &[]),
+        ]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<u8>>(),
+        vec![Rc::new(Object::Integer(1)), Rc::new(Object::Integer(2))],
+    );
+    let (byte_code, error) = parse_and_compile(input);
+    assert_eq!(error, None);
+    assert_eq!(byte_code, Some(expected));
+}
+
+#[test]
+fn test_compile_boolean_expression_three() {
+    let input = "1 != 2;";
+    let expected = ByteCode(
+        vec![
+            make(OpCode::Constant, &[0_u32]),
+            make(OpCode::Constant, &[1_u32]),
+            make(OpCode::NotEqual, &[]),
+            make(OpCode::Pop, &[]),
+        ]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<u8>>(),
+        vec![Rc::new(Object::Integer(1)), Rc::new(Object::Integer(2))],
+    );
+    let (byte_code, error) = parse_and_compile(input);
+    assert_eq!(error, None);
+    assert_eq!(byte_code, Some(expected));
+}
+
+#[test]
+fn test_compile_boolean_expression_four() {
+    let input = "true == false;";
+    let expected = ByteCode(
+        vec![
+            make(OpCode::True, &[]),
+            make(OpCode::False, &[]),
+            make(OpCode::Equal, &[]),
+            make(OpCode::Pop, &[]),
+        ]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<u8>>(),
+        vec![],
+    );
+    let (byte_code, error) = parse_and_compile(input);
+    assert_eq!(error, None);
+    assert_eq!(byte_code, Some(expected));
+}
+
+#[test]
+fn test_compile_boolean_expression_five() {
+    let input = "true != false;";
+    let expected = ByteCode(
+        vec![
+            make(OpCode::True, &[]),
+            make(OpCode::False, &[]),
+            make(OpCode::NotEqual, &[]),
+            make(OpCode::Pop, &[]),
+        ]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<u8>>(),
+        vec![],
+    );
+    let (byte_code, error) = parse_and_compile(input);
+    assert_eq!(error, None);
+    assert_eq!(byte_code, Some(expected));
+}
+
+#[test]
+fn test_compile_minus_expressions() {
+    let input = "-1";
+    let expected = ByteCode(
+        vec![
+            make(OpCode::Constant, &[0_u32]),
+            make(OpCode::Minus, &[]),
+            make(OpCode::Pop, &[]),
+        ]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<u8>>(),
+        vec![Rc::new(Object::Integer(1))],
+    );
+    let (byte_code, error) = parse_and_compile(input);
+    assert_eq!(error, None);
+    assert_eq!(byte_code, Some(expected));
+}
+
+#[test]
+fn test_compile_bang_expression() {
+    let input = "!true";
+    let expected = ByteCode(
+        vec![
+            make(OpCode::True, &[]),
+            make(OpCode::Bang, &[]),
             make(OpCode::Pop, &[]),
         ]
         .into_iter()

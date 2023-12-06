@@ -1,6 +1,6 @@
 use crate::code::{make, Instructions, OpCode};
 use crate::evaluator::object::Object;
-use crate::parser::ast::{Expression, Infix, Program, Statement};
+use crate::parser::ast::{Expression, Infix, Prefix, Program, Statement};
 use std::rc::Rc;
 
 mod tests;
@@ -50,7 +50,7 @@ impl Compiler {
         match expression {
             Expression::Identifier(_) => todo!(),
             Expression::Integer(integer) => self.compile_integer_expression(*integer)?,
-            Expression::Prefix(_, _) => todo!(),
+            Expression::Prefix(prefix, right) => self.compile_prefix_expression(prefix, right)?,
             Expression::Infix(left, infix, right) => {
                 self.compile_infix_expression(left, infix, right)?
             }
@@ -73,6 +73,23 @@ impl Compiler {
         Ok(())
     }
 
+    fn compile_prefix_expression(
+        &mut self,
+        prefix: &Prefix,
+        right: &Expression,
+    ) -> Result<(), CompilerError> {
+        self.compile_expression(right)?;
+        match prefix {
+            Prefix::Minus => {
+                self.emit(OpCode::Minus, &[]);
+            }
+            Prefix::Bang => {
+                self.emit(OpCode::Bang, &[]);
+            }
+        }
+        Ok(())
+    }
+
     fn compile_integer_expression(&mut self, integer: i64) -> Result<(), CompilerError> {
         let constant_address = self.add_constant(Object::Integer(integer));
         self.emit(OpCode::Constant, &[constant_address]);
@@ -85,8 +102,13 @@ impl Compiler {
         infix: &Infix,
         right: &Expression,
     ) -> Result<(), CompilerError> {
-        self.compile_expression(left)?;
-        self.compile_expression(right)?;
+        if *infix == Infix::LessThan {
+            self.compile_expression(right)?;
+            self.compile_expression(left)?;
+        } else {
+            self.compile_expression(left)?;
+            self.compile_expression(right)?;
+        }
         match infix {
             Infix::Plus => {
                 self.emit(OpCode::Add, &[]);
@@ -100,10 +122,18 @@ impl Compiler {
             Infix::Divide => {
                 self.emit(OpCode::Divide, &[]);
             }
-            Infix::GreaterThan => todo!(),
-            Infix::LessThan => todo!(),
-            Infix::Equal => todo!(),
-            Infix::NotEqual => todo!(),
+            Infix::GreaterThan => {
+                self.emit(OpCode::GreaterThan, &[]);
+            }
+            Infix::LessThan => {
+                self.emit(OpCode::GreaterThan, &[]);
+            }
+            Infix::Equal => {
+                self.emit(OpCode::Equal, &[]);
+            }
+            Infix::NotEqual => {
+                self.emit(OpCode::NotEqual, &[]);
+            }
             Infix::And => todo!(),
             Infix::Or => todo!(),
         }

@@ -16,6 +16,11 @@ pub enum OpCode {
     Divide,
     True,
     False,
+    Equal,
+    NotEqual,
+    GreaterThan,
+    Minus,
+    Bang,
 }
 
 impl Display for OpCode {
@@ -32,6 +37,11 @@ impl Display for OpCode {
                 OpCode::Divide => "OpDivide",
                 OpCode::True => "OpTrue",
                 OpCode::False => "OpFalse",
+                OpCode::Equal => "OpEqual",
+                OpCode::NotEqual => "OpNotEqual",
+                OpCode::GreaterThan => "OpGreaterThan",
+                OpCode::Minus => "OpMinus",
+                OpCode::Bang => "OpBang",
             }
         )
     }
@@ -50,6 +60,11 @@ impl TryFrom<u8> for OpCode {
             0x05 => Ok(OpCode::Divide),
             0x06 => Ok(OpCode::True),
             0x07 => Ok(OpCode::False),
+            0x08 => Ok(OpCode::Equal),
+            0x09 => Ok(OpCode::NotEqual),
+            0x0a => Ok(OpCode::GreaterThan),
+            0x0b => Ok(OpCode::Minus),
+            0x0c => Ok(OpCode::Bang),
             _ => Err("Invalid OpCode"),
         }
     }
@@ -66,6 +81,11 @@ impl From<OpCode> for u8 {
             OpCode::Divide => 0x05,
             OpCode::True => 0x06,
             OpCode::False => 0x07,
+            OpCode::Equal => 0x08,
+            OpCode::NotEqual => 0x09,
+            OpCode::GreaterThan => 0x0a,
+            OpCode::Minus => 0x0b,
+            OpCode::Bang => 0x0c,
         }
     }
 }
@@ -85,7 +105,12 @@ pub fn make(op: OpCode, operands: &[u32]) -> [u8; 4] {
         | OpCode::Multiply
         | OpCode::Divide
         | OpCode::True
-        | OpCode::False => {
+        | OpCode::False
+        | OpCode::Equal
+        | OpCode::NotEqual
+        | OpCode::GreaterThan
+        | OpCode::Minus
+        | OpCode::Bang => {
             instruction[0] = u8::from(op);
         }
     }
@@ -108,7 +133,12 @@ pub fn disassemble(instructions: &Instructions) -> String {
             | OpCode::Multiply
             | OpCode::Divide
             | OpCode::True
-            | OpCode::False => assembly.push_str(&format!("{:04x} {}\n", address, op)),
+            | OpCode::False
+            | OpCode::Equal
+            | OpCode::NotEqual
+            | OpCode::GreaterThan
+            | OpCode::Minus
+            | OpCode::Bang => assembly.push_str(&format!("{:04x} {}\n", address, op)),
         }
         address += 4;
     });
