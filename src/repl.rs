@@ -1,7 +1,9 @@
+use crate::compiler::Compiler;
 use crate::evaluator::environment::Environment;
 use crate::evaluator::eval;
 use crate::evaluator::object::Object;
 use crate::parser::Parser;
+use crate::vm::{VirtualMachine, VmError};
 use std::cell::RefCell;
 use std::io::{self, Write};
 use std::rc::Rc;
@@ -38,13 +40,17 @@ impl Repl {
                 }
             };
 
-            let eval_result = eval(program, Rc::clone(&env));
-            match eval_result {
-                Ok(object) => match &*object {
-                    Object::Null | Object::Function(_) => continue,
-                    obj => println!("{obj}"),
-                },
-                Err(error) => println!("{error:?}"),
+            let byte_code = match Compiler::compile(program) {
+                Ok(res) => res,
+                Err(e) => {
+                    println!("{e:?}");
+                    continue;
+                }
+            };
+
+            match VirtualMachine::run(byte_code) {
+                Ok(obj) => println!("{obj}"),
+                Err(e) => println!("{e:?}"),
             }
         }
 

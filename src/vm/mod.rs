@@ -8,7 +8,7 @@ mod tests;
 const STACK_SIZE: usize = 2048; // 2KB
 
 #[derive(Debug, PartialEq)]
-struct VirtualMachine {
+pub struct VirtualMachine {
     stack: Vec<Rc<Object>>,
 }
 
