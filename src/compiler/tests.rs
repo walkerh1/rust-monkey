@@ -21,7 +21,7 @@ fn parse_and_compile(input: &str) -> (Option<ByteCode>, Option<CompilerError>) {
 fn test_compile_integer_object() {
     let input = "1096";
     let expected = ByteCode(
-        vec![make(OpCode::Constant, &[0_u32])]
+        vec![make(OpCode::Constant, &[0_u32]), make(OpCode::Pop, &[])]
             .into_iter()
             .flatten()
             .collect::<Vec<u8>>(),
@@ -33,13 +33,14 @@ fn test_compile_integer_object() {
 }
 
 #[test]
-fn test_compile_integer_arithmetic() {
+fn test_compile_integer_addition() {
     let input = "1 + 2";
     let expected = ByteCode(
         vec![
             make(OpCode::Constant, &[0_u32]),
             make(OpCode::Constant, &[1_u32]),
             make(OpCode::Add, &[]),
+            make(OpCode::Pop, &[]),
         ]
         .into_iter()
         .flatten()

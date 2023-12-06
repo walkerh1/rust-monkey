@@ -36,7 +36,10 @@ impl Compiler {
         match statement {
             Statement::Let(_, _) => todo!(),
             Statement::Return(_) => todo!(),
-            Statement::Expression(expression) => self.compile_expression(expression)?,
+            Statement::Expression(expression) => {
+                self.compile_expression(expression)?;
+                self.emit(OpCode::Pop, &[]);
+            }
             Statement::BlockStatement(_) => todo!(),
             Statement::Assignment(_, _) => todo!(),
         }

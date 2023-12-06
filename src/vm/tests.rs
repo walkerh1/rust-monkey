@@ -28,12 +28,12 @@ fn test_vm_integer_object() {
 }
 
 #[test]
-fn test_vm_stack_overflow() {
+fn test_vm_stack_overflow_not_dependent_on_number_of_statements() {
     let input = "1024;".repeat(STACK_SIZE + 1);
-    let expected_error = VmError::StackOverflow;
+    let expected = Rc::new(Object::Integer(1024));
     let (result, error) = compile_and_run(input.as_str());
-    assert_eq!(error, Some(expected_error));
-    assert_eq!(result, None);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
 }
 
 #[test]

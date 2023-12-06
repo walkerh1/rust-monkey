@@ -1,9 +1,7 @@
 use crate::compiler::Compiler;
 use crate::evaluator::environment::Environment;
-use crate::evaluator::eval;
-use crate::evaluator::object::Object;
 use crate::parser::Parser;
-use crate::vm::{VirtualMachine, VmError};
+use crate::vm::VirtualMachine;
 use std::cell::RefCell;
 use std::io::{self, Write};
 use std::rc::Rc;
@@ -17,7 +15,7 @@ impl Repl {
         let reader = io::stdin();
         let mut writer = io::stdout();
 
-        let env = Rc::new(RefCell::new(Environment::new()));
+        let _env = Rc::new(RefCell::new(Environment::new()));
 
         loop {
             writer.write_all(PROMPT.as_bytes())?;

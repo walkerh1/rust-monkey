@@ -18,6 +18,8 @@ impl VirtualMachine {
             stack: Vec::with_capacity(STACK_SIZE),
         };
 
+        let mut last_popped = None;
+
         let ByteCode(instructions, constants) = byte_code;
 
         for word in instructions.chunks_exact(WORD_SIZE) {
@@ -42,10 +44,16 @@ impl VirtualMachine {
                         _ => return Err(VmError::IncompatibleTypes),
                     }
                 }
+                OpCode::Pop => {
+                    last_popped = Some(vm.pop()?);
+                }
             }
         }
 
-        vm.top()
+        match last_popped {
+            Some(obj) => Ok(obj),
+            None => Err(VmError::EmptyStack),
+        }
     }
 
     fn push(&mut self, object: &Rc<Object>) -> Result<(), VmError> {
@@ -61,13 +69,6 @@ impl VirtualMachine {
             Some(object) => Ok(Rc::clone(&object)),
             None => Err(VmError::StackUnderflow),
         }
-    }
-
-    fn top(&self) -> Result<Rc<Object>, VmError> {
-        if self.stack.is_empty() {
-            return Err(VmError::EmptyStack);
-        }
-        Ok(Rc::clone(&self.stack[self.stack.len() - 1]))
     }
 }
 

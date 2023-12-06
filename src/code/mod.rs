@@ -6,31 +6,11 @@ pub const WORD_SIZE: usize = 4;
 
 pub type Instructions = Vec<u8>;
 
-pub fn disassemble(instructions: &Instructions) -> String {
-    let mut assembly = String::from("");
-    let mut address: u32 = 0;
-    instructions.chunks_exact(WORD_SIZE).for_each(|word| {
-        let op: OpCode = OpCode::try_from(word[0]).expect("Invalid OpCode");
-        match op {
-            OpCode::Constant => {
-                let operand = read_u16(&word[1..=2]);
-                assembly.push_str(&format!("{:04x} {} {}\n", address, op, operand))
-            }
-            OpCode::Add => assembly.push_str(&format!("{:04x} {}\n", address, op)),
-        }
-        address += 4;
-    });
-    assembly
-}
-
-pub fn read_u16(bytes: &[u8]) -> u16 {
-    ((bytes[0] as u16) << 8) | bytes[1] as u16
-}
-
 #[derive(Debug, PartialOrd, PartialEq)]
 pub enum OpCode {
     Constant,
     Add,
+    Pop,
 }
 
 impl Display for OpCode {
@@ -41,6 +21,7 @@ impl Display for OpCode {
             match self {
                 OpCode::Constant => "OpConstant",
                 OpCode::Add => "OpAdd",
+                OpCode::Pop => "OpPop",
             }
         )
     }
@@ -53,6 +34,7 @@ impl TryFrom<u8> for OpCode {
         match value {
             0x00 => Ok(OpCode::Constant),
             0x01 => Ok(OpCode::Add),
+            0x02 => Ok(OpCode::Pop),
             _ => Err("Invalid OpCode"),
         }
     }
@@ -63,6 +45,7 @@ impl From<OpCode> for u8 {
         match value {
             OpCode::Constant => 0x00,
             OpCode::Add => 0x01,
+            OpCode::Pop => 0x02,
         }
     }
 }
@@ -76,9 +59,30 @@ pub fn make(op: OpCode, operands: &[u32]) -> [u8; 4] {
             instruction[1] = operand[0];
             instruction[2] = operand[1];
         }
-        OpCode::Add => {
+        OpCode::Add | OpCode::Pop => {
             instruction[0] = u8::from(op);
         }
     }
     instruction
+}
+
+pub fn disassemble(instructions: &Instructions) -> String {
+    let mut assembly = String::from("");
+    let mut address: u32 = 0;
+    instructions.chunks_exact(WORD_SIZE).for_each(|word| {
+        let op: OpCode = OpCode::try_from(word[0]).expect("Invalid OpCode");
+        match op {
+            OpCode::Constant => {
+                let operand = read_u16(&word[1..=2]);
+                assembly.push_str(&format!("{:04} {} {}\n", address, op, operand))
+            }
+            OpCode::Add | OpCode::Pop => assembly.push_str(&format!("{:04x} {}\n", address, op)),
+        }
+        address += 4;
+    });
+    assembly
+}
+
+pub fn read_u16(bytes: &[u8]) -> u16 {
+    ((bytes[0] as u16) << 8) | bytes[1] as u16
 }

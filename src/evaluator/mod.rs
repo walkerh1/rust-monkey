@@ -11,6 +11,7 @@ pub mod environment;
 pub mod object;
 mod tests;
 
+#[allow(dead_code)]
 pub fn eval(program: Program, env: Rc<RefCell<Environment>>) -> Result<Rc<Object>, EvalError> {
     let Program(statements) = program;
     eval_statements(&statements, env)
