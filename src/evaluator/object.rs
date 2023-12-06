@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 use std::rc::Rc;
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Object {
     Null,
     Integer(i64),
@@ -53,14 +53,14 @@ impl Display for Object {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Function {
     pub parameters: Vec<String>,
     pub body: Statement,
     pub env: Rc<RefCell<Environment>>,
 }
 
-#[derive(Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub enum Hashable {
     String(String),
     Integer(i64),

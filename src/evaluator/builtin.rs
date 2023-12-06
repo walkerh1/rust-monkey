@@ -2,7 +2,7 @@ use crate::evaluator::object::Object;
 use crate::evaluator::EvalError;
 use std::rc::Rc;
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Builtin {
     Len,
     First,
