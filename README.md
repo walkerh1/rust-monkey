@@ -12,6 +12,7 @@ let makeCounter = fn() {
     let count = 0;
     return fn() {
         count = count + 1;
+        return count;
     };
 }
 let counter = makeCounter();
