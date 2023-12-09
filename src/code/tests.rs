@@ -107,6 +107,22 @@ fn test_make_op_bang() {
 }
 
 #[test]
+fn test_make_op_jump_not_truthy() {
+    let (op, operands) = (OpCode::JumpNotTruthy, [0xFFFE_u32]);
+    let expected: [u8; 4] = [0x0d, 0xFF, 0xFE, 0x00];
+    let result = make(op, &operands);
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_make_op_jump() {
+    let (op, operands) = (OpCode::Jump, [0xFFFE_u32]);
+    let expected: [u8; 4] = [0x0e, 0xFF, 0xFE, 0x00];
+    let result = make(op, &operands);
+    assert_eq!(result, expected);
+}
+
+#[test]
 fn test_disassemble() {
     let input: Instructions = vec![
         0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFE, 0x00, 0x02, 0x00, 0x00,

@@ -21,6 +21,8 @@ pub enum OpCode {
     GreaterThan,
     Minus,
     Bang,
+    JumpNotTruthy,
+    Jump,
 }
 
 impl Display for OpCode {
@@ -42,6 +44,8 @@ impl Display for OpCode {
                 OpCode::GreaterThan => "OpGreaterThan",
                 OpCode::Minus => "OpMinus",
                 OpCode::Bang => "OpBang",
+                OpCode::JumpNotTruthy => "OpJumpNotTruthy",
+                OpCode::Jump => "OpJump",
             }
         )
     }
@@ -65,6 +69,8 @@ impl TryFrom<u8> for OpCode {
             0x0a => Ok(OpCode::GreaterThan),
             0x0b => Ok(OpCode::Minus),
             0x0c => Ok(OpCode::Bang),
+            0x0d => Ok(OpCode::JumpNotTruthy),
+            0x0e => Ok(OpCode::Jump),
             _ => Err("Invalid OpCode"),
         }
     }
@@ -86,6 +92,8 @@ impl From<OpCode> for u8 {
             OpCode::GreaterThan => 0x0a,
             OpCode::Minus => 0x0b,
             OpCode::Bang => 0x0c,
+            OpCode::JumpNotTruthy => 0x0d,
+            OpCode::Jump => 0x0e,
         }
     }
 }
@@ -93,7 +101,7 @@ impl From<OpCode> for u8 {
 pub fn make(op: OpCode, operands: &[u32]) -> [u8; 4] {
     let mut instruction = [0x00; 4];
     match op {
-        OpCode::Constant => {
+        OpCode::Constant | OpCode::JumpNotTruthy | OpCode::Jump => {
             instruction[0] = u8::from(op);
             let operand = (operands[0] as u16).to_be_bytes();
             instruction[1] = operand[0];
@@ -123,7 +131,7 @@ pub fn disassemble(instructions: &Instructions) -> String {
     instructions.chunks_exact(WORD_SIZE).for_each(|word| {
         let op: OpCode = OpCode::try_from(word[0]).expect("Invalid OpCode");
         match op {
-            OpCode::Constant => {
+            OpCode::Constant | OpCode::JumpNotTruthy | OpCode::Jump => {
                 let operand = read_u16(&word[1..=2]);
                 assembly.push_str(&format!("{:04x} {} {}\n", address, op, operand))
             }
