@@ -25,7 +25,11 @@ impl VirtualMachine {
 
         let ByteCode(instructions, constants) = byte_code;
 
-        for word in instructions.chunks_exact(WORD_SIZE) {
+        let mut ip = 0;
+
+        while ip < instructions.len() {
+            let word = &instructions[ip..ip + WORD_SIZE];
+
             let op = match OpCode::try_from(word[0]) {
                 Ok(op_code) => op_code,
                 Err(_) => return Err(VmError::UnknownOpCode),
@@ -61,8 +65,22 @@ impl VirtualMachine {
                 OpCode::Pop => {
                     last_popped = Some(vm.pop()?);
                 }
-                _ => todo!(),
+                OpCode::Jump => {
+                    let pos = read_u16(&word[1..=2]) as usize;
+                    ip = pos;
+                    continue;
+                }
+                OpCode::JumpNotTruthy => {
+                    let pos = read_u16(&word[1..=2]) as usize;
+                    let condition = vm.pop()?;
+                    if !VirtualMachine::is_truthy(&*condition) {
+                        ip = pos;
+                        continue;
+                    }
+                }
             }
+
+            ip += WORD_SIZE;
         }
 
         match last_popped {
@@ -151,6 +169,15 @@ impl VirtualMachine {
             _ => return Err(VmError::IncompatibleTypes),
         };
         self.push(&Rc::new(result))
+    }
+
+    fn is_truthy(object: &Object) -> bool {
+        match object {
+            Object::Null => false,
+            Object::Integer(val) => *val != 0,
+            Object::Boolean(val) => *val,
+            _ => true,
+        }
     }
 
     fn push(&mut self, object: &Rc<Object>) -> Result<(), VmError> {

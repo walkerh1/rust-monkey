@@ -1,4 +1,4 @@
-use crate::code::{make, read_u16, read_u32, Instructions, OpCode, WORD_SIZE};
+use crate::code::{make, Instructions, OpCode, WORD_SIZE};
 use crate::evaluator::object::Object;
 use crate::parser::ast::{Expression, Infix, Prefix, Program, Statement};
 use std::rc::Rc;
@@ -195,7 +195,6 @@ impl Compiler {
 
     fn last_instruction_is_pop(&self) -> bool {
         let last_op_code = self.get_instruction_at(self.instructions.len() - WORD_SIZE);
-        let idx = self.instructions.len() - WORD_SIZE;
         if let Ok(op_code) = last_op_code {
             return op_code == OpCode::Pop;
         }

@@ -251,3 +251,57 @@ fn test_vm_minus_expression_error_if_used_on_boolean() {
     assert_eq!(error, Some(expected_error));
     assert_eq!(result, None);
 }
+
+#[test]
+fn test_conditional_one() {
+    let input = "if (true) { 10 }";
+    let expected = Rc::new(Object::Integer(10));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_conditional_two() {
+    let input = "if (true) { 10 } else { 20 }";
+    let expected = Rc::new(Object::Integer(10));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_conditional_three() {
+    let input = "if (false) { 10 } else { 20 }";
+    let expected = Rc::new(Object::Integer(20));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_conditional_four() {
+    let input = "if (1) { 10 }";
+    let expected = Rc::new(Object::Integer(10));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_conditional_five() {
+    let input = "if (1 < 2) { 10 }";
+    let expected = Rc::new(Object::Integer(10));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_conditional_six() {
+    let input = "if (1 > 2) { 10 } else { 20 }";
+    let expected = Rc::new(Object::Integer(20));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
