@@ -90,7 +90,7 @@ impl Compiler {
     ) -> Result<(), CompilerError> {
         self.compile_expression(condition)?;
 
-        let jump_not_truthy_pos = self.emit(OpCode::JumpNotTruthy, &[4000_u32]);
+        let jump_not_truthy_pos = self.emit(OpCode::JumpNotTruthy, &[9999_u32]);
 
         self.compile_statement(consequence)?;
 
@@ -98,25 +98,24 @@ impl Compiler {
             self.remove_last_instruction();
         }
 
+        let jump_pos = self.emit(OpCode::Jump, &[9999_u32]);
+
+        let after_consequence_pos = self.instructions.len() as u32;
+        self.change_operand(jump_not_truthy_pos as usize, after_consequence_pos)?;
+
         if alternative.is_none() {
-            let after_consequence_pos = self.instructions.len() as u32;
-            self.change_operand(jump_not_truthy_pos as usize, after_consequence_pos)?;
+            self.emit(OpCode::Null, &[]);
         } else {
-            let jump_pos = self.emit(OpCode::Jump, &[9000_u32]);
-
-            let after_consequence_pos = self.instructions.len() as u32;
-            self.change_operand(jump_not_truthy_pos as usize, after_consequence_pos)?;
-
             let else_block = alternative.as_ref().unwrap();
             self.compile_statement(&else_block)?;
 
             if self.last_instruction_is_pop() {
                 self.remove_last_instruction();
             }
-
-            let after_consequence_pos = self.instructions.len() as u32;
-            self.change_operand(jump_pos as usize, after_consequence_pos)?;
         }
+
+        let after_consequence_pos = self.instructions.len() as u32;
+        self.change_operand(jump_pos as usize, after_consequence_pos)?;
 
         Ok(())
     }

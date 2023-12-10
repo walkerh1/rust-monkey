@@ -9,6 +9,7 @@ const STACK_SIZE: usize = 2048; // 2KB
 
 const TRUE: Object = Object::Boolean(true);
 const FALSE: Object = Object::Boolean(false);
+const NULL: Object = Object::Null;
 
 #[derive(Debug, PartialEq)]
 pub struct VirtualMachine {
@@ -78,6 +79,9 @@ impl VirtualMachine {
                         continue;
                     }
                 }
+                OpCode::Null => {
+                    vm.push(&Rc::new(NULL))?;
+                }
             }
 
             ip += WORD_SIZE;
@@ -101,12 +105,20 @@ impl VirtualMachine {
 
     fn execute_bang_expression(&mut self) -> Result<(), VmError> {
         let right = self.pop()?;
-        if let Object::Boolean(boolean) = &*right {
-            let result = if *boolean { FALSE } else { TRUE };
-            self.push(&Rc::new(result))?;
-        } else {
-            return Err(VmError::IncompatibleTypes);
-        }
+        let result = match &*right {
+            Object::Boolean(val) => {
+                if *val {
+                    FALSE
+                } else {
+                    TRUE
+                }
+            }
+            Object::Null => TRUE,
+            _ => return Err(VmError::IncompatibleTypes),
+        };
+
+        self.push(&Rc::new(result))?;
+
         Ok(())
     }
 

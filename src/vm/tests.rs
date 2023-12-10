@@ -305,3 +305,21 @@ fn test_conditional_six() {
     assert_eq!(error, None);
     assert_eq!(result, Some(expected));
 }
+
+#[test]
+fn test_conditional_seven() {
+    let input = "if (false) { 10 }";
+    let expected = Rc::new(Object::Null);
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_conditional_eight() {
+    let input = "!(if (false) { 10 })";
+    let expected = Rc::new(Object::Boolean(true));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}

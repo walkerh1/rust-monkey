@@ -23,6 +23,7 @@ pub enum OpCode {
     Bang,
     JumpNotTruthy,
     Jump,
+    Null,
 }
 
 impl Display for OpCode {
@@ -46,6 +47,7 @@ impl Display for OpCode {
                 OpCode::Bang => "OpBang",
                 OpCode::JumpNotTruthy => "OpJumpNotTruthy",
                 OpCode::Jump => "OpJump",
+                OpCode::Null => "OpNull",
             }
         )
     }
@@ -71,6 +73,7 @@ impl TryFrom<u8> for OpCode {
             0x0c => Ok(OpCode::Bang),
             0x0d => Ok(OpCode::JumpNotTruthy),
             0x0e => Ok(OpCode::Jump),
+            0x0f => Ok(OpCode::Null),
             _ => Err("Invalid OpCode"),
         }
     }
@@ -94,6 +97,7 @@ impl From<OpCode> for u8 {
             OpCode::Bang => 0x0c,
             OpCode::JumpNotTruthy => 0x0d,
             OpCode::Jump => 0x0e,
+            OpCode::Null => 0x0f,
         }
     }
 }
@@ -118,13 +122,15 @@ pub fn make(op: OpCode, operands: &[u32]) -> [u8; 4] {
         | OpCode::NotEqual
         | OpCode::GreaterThan
         | OpCode::Minus
-        | OpCode::Bang => {
+        | OpCode::Bang
+        | OpCode::Null => {
             instruction[0] = u8::from(op);
         }
     }
     instruction
 }
 
+#[allow(unused)]
 pub fn disassemble(instructions: &Instructions) -> String {
     let mut assembly = String::from("");
     let mut address: u32 = 0;
@@ -146,7 +152,8 @@ pub fn disassemble(instructions: &Instructions) -> String {
             | OpCode::NotEqual
             | OpCode::GreaterThan
             | OpCode::Minus
-            | OpCode::Bang => assembly.push_str(&format!("{:04x} {}\n", address, op)),
+            | OpCode::Bang
+            | OpCode::Null => assembly.push_str(&format!("{:04x} {}\n", address, op)),
         }
         address += 4;
     });
