@@ -315,3 +315,53 @@ fn test_compile_bang_expression() {
     assert_eq!(error, None);
     assert_eq!(byte_code, Some(expected));
 }
+
+#[test]
+fn test_compile_conditional_no_else() {
+    let input = "if (true) { 10 }; 1024";
+    let expected = ByteCode(
+        vec![
+            make(OpCode::True, &[]),                // 0000
+            make(OpCode::JumpNotTruthy, &[12_u32]), // 0004
+            make(OpCode::Constant, &[0_u32]),       // 0008
+            make(OpCode::Pop, &[]),                 // 0012
+            make(OpCode::Constant, &[1_u32]),       // 0016
+            make(OpCode::Pop, &[]),                 // 0020
+        ]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<u8>>(),
+        vec![Rc::new(Object::Integer(10)), Rc::new(Object::Integer(1024))],
+    );
+    let (byte_code, error) = parse_and_compile(input);
+    assert_eq!(error, None);
+    assert_eq!(byte_code, Some(expected));
+}
+
+#[test]
+fn test_compile_conditional_with_else() {
+    let input = "if (true) { 10 } else { 20 }; 1024";
+    let expected = ByteCode(
+        vec![
+            make(OpCode::True, &[]),                // 0000
+            make(OpCode::JumpNotTruthy, &[16_u32]), // 0004
+            make(OpCode::Constant, &[0_u32]),       // 0008
+            make(OpCode::Jump, &[20_u32]),          // 0012
+            make(OpCode::Constant, &[1_u32]),       // 0016
+            make(OpCode::Pop, &[]),                 // 0020
+            make(OpCode::Constant, &[2_u32]),       // 0024
+            make(OpCode::Pop, &[]),                 // 0028
+        ]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<u8>>(),
+        vec![
+            Rc::new(Object::Integer(10)),
+            Rc::new(Object::Integer(20)),
+            Rc::new(Object::Integer(1024)),
+        ],
+    );
+    let (byte_code, error) = parse_and_compile(input);
+    assert_eq!(error, None);
+    assert_eq!(byte_code, Some(expected));
+}

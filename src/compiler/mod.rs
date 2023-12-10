@@ -1,4 +1,4 @@
-use crate::code::{make, Instructions, OpCode};
+use crate::code::{make, read_u16, read_u32, Instructions, OpCode, WORD_SIZE};
 use crate::evaluator::object::Object;
 use crate::parser::ast::{Expression, Infix, Prefix, Program, Statement};
 use std::rc::Rc;
@@ -40,8 +40,15 @@ impl Compiler {
                 self.compile_expression(expression)?;
                 self.emit(OpCode::Pop, &[]);
             }
-            Statement::BlockStatement(_) => todo!(),
+            Statement::BlockStatement(statements) => self.compile_block_statement(statements)?,
             Statement::Assignment(_, _) => todo!(),
+        }
+        Ok(())
+    }
+
+    fn compile_block_statement(&mut self, block: &[Statement]) -> Result<(), CompilerError> {
+        for statement in block.iter() {
+            self.compile_statement(statement)?;
         }
         Ok(())
     }
@@ -61,7 +68,9 @@ impl Compiler {
                     self.emit(OpCode::False, &[]);
                 }
             }
-            Expression::If(_, _, _) => todo!(),
+            Expression::If(condition, consequence, alternative) => {
+                self.compile_if_expression(condition, consequence, alternative)?
+            }
             Expression::Function(_, _) => todo!(),
             Expression::Call(_, _) => todo!(),
             Expression::String(_) => todo!(),
@@ -70,6 +79,45 @@ impl Compiler {
             Expression::Hash(_) => todo!(),
             Expression::While(_, _) => todo!(),
         }
+        Ok(())
+    }
+
+    fn compile_if_expression(
+        &mut self,
+        condition: &Expression,
+        consequence: &Statement,
+        alternative: &Option<Box<Statement>>,
+    ) -> Result<(), CompilerError> {
+        self.compile_expression(condition)?;
+
+        let jump_not_truthy_pos = self.emit(OpCode::JumpNotTruthy, &[4000_u32]);
+
+        self.compile_statement(consequence)?;
+
+        if self.last_instruction_is_pop() {
+            self.remove_last_instruction();
+        }
+
+        if alternative.is_none() {
+            let after_consequence_pos = self.instructions.len() as u32;
+            self.change_operand(jump_not_truthy_pos as usize, after_consequence_pos)?;
+        } else {
+            let jump_pos = self.emit(OpCode::Jump, &[9000_u32]);
+
+            let after_consequence_pos = self.instructions.len() as u32;
+            self.change_operand(jump_not_truthy_pos as usize, after_consequence_pos)?;
+
+            let else_block = alternative.as_ref().unwrap();
+            self.compile_statement(&else_block)?;
+
+            if self.last_instruction_is_pop() {
+                self.remove_last_instruction();
+            }
+
+            let after_consequence_pos = self.instructions.len() as u32;
+            self.change_operand(jump_pos as usize, after_consequence_pos)?;
+        }
+
         Ok(())
     }
 
@@ -145,6 +193,45 @@ impl Compiler {
         (self.constants.len() - 1) as u32
     }
 
+    fn last_instruction_is_pop(&self) -> bool {
+        let last_op_code = self.get_instruction_at(self.instructions.len() - WORD_SIZE);
+        let idx = self.instructions.len() - WORD_SIZE;
+        if let Ok(op_code) = last_op_code {
+            return op_code == OpCode::Pop;
+        }
+        false
+    }
+
+    fn remove_last_instruction(&mut self) {
+        for _ in 0..WORD_SIZE {
+            self.instructions.pop();
+        }
+    }
+
+    fn change_operand(&mut self, op_address: usize, operand: u32) -> Result<(), CompilerError> {
+        let op = self.get_instruction_at(op_address)?;
+        let new_instruction = make(op, &[operand]);
+        self.replace_instruction(op_address, &new_instruction)?;
+        Ok(())
+    }
+
+    fn replace_instruction(
+        &mut self,
+        address: usize,
+        new_instruction: &[u8],
+    ) -> Result<(), CompilerError> {
+        let mut i = 0;
+        for _ in 0..WORD_SIZE {
+            self.instructions[address + i] = new_instruction[i];
+            i += 1;
+        }
+        Ok(())
+    }
+
+    fn get_instruction_at(&self, idx: usize) -> Result<OpCode, CompilerError> {
+        OpCode::try_from(self.instructions[idx] as u8).map_err(|_| CompilerError::InvalidOpCode)
+    }
+
     fn emit(&mut self, op: OpCode, operands: &[u32]) -> u32 {
         let instruction = make(op, operands);
         let instruction_address = self.instructions.len();
@@ -154,4 +241,6 @@ impl Compiler {
 }
 
 #[derive(Debug, PartialEq)]
-pub enum CompilerError {}
+pub enum CompilerError {
+    InvalidOpCode,
+}
