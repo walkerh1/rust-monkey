@@ -1,6 +1,8 @@
 use crate::code::{make, Instructions, OpCode, WORD_SIZE};
 use crate::evaluator::object::Object;
 use crate::parser::ast::{Expression, Infix, Prefix, Program, Statement};
+use crate::symtab::SymbolTable;
+use std::borrow::Borrow;
 use std::rc::Rc;
 
 mod tests;
@@ -12,6 +14,7 @@ pub struct ByteCode(pub Instructions, pub Vec<Rc<Object>>);
 pub struct Compiler {
     instructions: Instructions,
     constants: Vec<Rc<Object>>,
+    symbol_table: SymbolTable,
 }
 
 impl Compiler {
@@ -19,6 +22,7 @@ impl Compiler {
         let mut compiler = Compiler {
             instructions: vec![],
             constants: vec![],
+            symbol_table: SymbolTable::new(),
         };
         let Program(statements) = program;
         compiler.compile_statements(&statements)?;
@@ -34,7 +38,7 @@ impl Compiler {
 
     fn compile_statement(&mut self, statement: &Statement) -> Result<(), CompilerError> {
         match statement {
-            Statement::Let(_, _) => todo!(),
+            Statement::Let(id, val) => self.compile_let(id, val)?,
             Statement::Return(_) => todo!(),
             Statement::Expression(expression) => {
                 self.compile_expression(expression)?;
@@ -42,6 +46,15 @@ impl Compiler {
             }
             Statement::BlockStatement(statements) => self.compile_block_statement(statements)?,
             Statement::Assignment(_, _) => todo!(),
+        }
+        Ok(())
+    }
+
+    fn compile_let(&mut self, id: &Expression, val: &Expression) -> Result<(), CompilerError> {
+        self.compile_expression(val)?;
+        if let Expression::Identifier(id) = id {
+            let symbol = self.symbol_table.define(id.to_string());
+            self.emit(OpCode::SetGlobal, &[symbol.index]);
         }
         Ok(())
     }
@@ -55,7 +68,14 @@ impl Compiler {
 
     fn compile_expression(&mut self, expression: &Expression) -> Result<(), CompilerError> {
         match expression {
-            Expression::Identifier(_) => todo!(),
+            Expression::Identifier(id) => match self.symbol_table.resolve(id.to_string()) {
+                Some(binding) => {
+                    self.emit(OpCode::GetGlobal, &[binding.index]);
+                }
+                None => {
+                    return Err(CompilerError::UndefinedVariable);
+                }
+            },
             Expression::Integer(integer) => self.compile_integer_expression(*integer)?,
             Expression::Prefix(prefix, right) => self.compile_prefix_expression(prefix, right)?,
             Expression::Infix(left, infix, right) => {
@@ -241,4 +261,5 @@ impl Compiler {
 #[derive(Debug, PartialEq)]
 pub enum CompilerError {
     InvalidOpCode,
+    UndefinedVariable,
 }

@@ -11,11 +11,11 @@ pub enum SymbolScope {
 pub struct Symbol {
     name: String,
     scope: SymbolScope,
-    index: usize,
+    pub index: u32,
 }
 
 impl Symbol {
-    pub fn new(name: &str, scope: SymbolScope, index: usize) -> Self {
+    pub fn new(name: &str, scope: SymbolScope, index: u32) -> Self {
         Symbol {
             name: name.to_string(),
             scope,
@@ -27,7 +27,7 @@ impl Symbol {
 #[derive(Debug, Default, PartialEq)]
 pub struct SymbolTable {
     store: HashMap<String, Rc<Symbol>>,
-    num_definitions: usize,
+    num_definitions: u32,
 }
 
 impl SymbolTable {
