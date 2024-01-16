@@ -367,3 +367,75 @@ fn test_compile_conditional_with_else() {
     assert_eq!(error, None);
     assert_eq!(byte_code, Some(expected));
 }
+
+#[test]
+fn test_compile_global_let_statement_one() {
+    let input = "
+let one = 1;
+let two = 2;
+";
+    let expected = ByteCode(
+        vec![
+            make(OpCode::Constant, &[0_u32]),
+            make(OpCode::SetGlobal, &[0_u32]),
+            make(OpCode::Constant, &[1_u32]),
+            make(OpCode::SetGlobal, &[1_u32]),
+        ]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<u8>>(),
+        vec![Rc::new(Object::Integer(1)), Rc::new(Object::Integer(2))],
+    );
+    let (byte_code, error) = parse_and_compile(input);
+    assert_eq!(error, None);
+    assert_eq!(byte_code, Some(expected));
+}
+
+#[test]
+fn test_compile_global_let_statement_two() {
+    let input = "
+let one = 1;
+one;
+";
+    let expected = ByteCode(
+        vec![
+            make(OpCode::Constant, &[0_u32]),
+            make(OpCode::SetGlobal, &[0_u32]),
+            make(OpCode::GetGlobal, &[0_u32]),
+            make(OpCode::Pop, &[]),
+        ]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<u8>>(),
+        vec![Rc::new(Object::Integer(1))],
+    );
+    let (byte_code, error) = parse_and_compile(input);
+    assert_eq!(error, None);
+    assert_eq!(byte_code, Some(expected));
+}
+
+#[test]
+fn test_compile_global_let_statement_three() {
+    let input = "
+let one = 1;
+let two = one;
+two;
+";
+    let expected = ByteCode(
+        vec![
+            make(OpCode::Constant, &[0_u32]),
+            make(OpCode::SetGlobal, &[0_u32]),
+            make(OpCode::GetGlobal, &[0_u32]),
+            make(OpCode::SetGlobal, &[1_u32]),
+            make(OpCode::GetGlobal, &[1_u32]),
+            make(OpCode::Pop, &[]),
+        ]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<u8>>(),
+        vec![Rc::new(Object::Integer(1))],
+    );
+    let (byte_code, error) = parse_and_compile(input);
+    assert_eq!(error, None);
+    assert_eq!(byte_code, Some(expected));
+}

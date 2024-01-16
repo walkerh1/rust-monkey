@@ -82,6 +82,8 @@ impl VirtualMachine {
                 OpCode::Null => {
                     vm.push(&Rc::new(NULL))?;
                 }
+                OpCode::SetGlobal => todo!(),
+                OpCode::GetGlobal => todo!(),
             }
 
             ip += WORD_SIZE;

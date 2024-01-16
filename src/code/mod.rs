@@ -24,6 +24,8 @@ pub enum OpCode {
     JumpNotTruthy,
     Jump,
     Null,
+    SetGlobal,
+    GetGlobal,
 }
 
 impl Display for OpCode {
@@ -48,6 +50,8 @@ impl Display for OpCode {
                 OpCode::JumpNotTruthy => "OpJumpNotTruthy",
                 OpCode::Jump => "OpJump",
                 OpCode::Null => "OpNull",
+                OpCode::SetGlobal => "OpSetGlobal",
+                OpCode::GetGlobal => "OpGetGlobal",
             }
         )
     }
@@ -74,6 +78,8 @@ impl TryFrom<u8> for OpCode {
             0x0d => Ok(OpCode::JumpNotTruthy),
             0x0e => Ok(OpCode::Jump),
             0x0f => Ok(OpCode::Null),
+            0x10 => Ok(OpCode::SetGlobal),
+            0x11 => Ok(OpCode::GetGlobal),
             _ => Err("Invalid OpCode"),
         }
     }
@@ -98,6 +104,8 @@ impl From<OpCode> for u8 {
             OpCode::JumpNotTruthy => 0x0d,
             OpCode::Jump => 0x0e,
             OpCode::Null => 0x0f,
+            OpCode::SetGlobal => 0x10,
+            OpCode::GetGlobal => 0x11,
         }
     }
 }
@@ -105,7 +113,11 @@ impl From<OpCode> for u8 {
 pub fn make(op: OpCode, operands: &[u32]) -> [u8; 4] {
     let mut instruction = [0x00; 4];
     match op {
-        OpCode::Constant | OpCode::JumpNotTruthy | OpCode::Jump => {
+        OpCode::Constant
+        | OpCode::JumpNotTruthy
+        | OpCode::Jump
+        | OpCode::SetGlobal
+        | OpCode::GetGlobal => {
             instruction[0] = u8::from(op);
             let operand = (operands[0] as u16).to_be_bytes();
             instruction[1] = operand[0];
@@ -137,7 +149,11 @@ pub fn disassemble(instructions: &Instructions) -> String {
     instructions.chunks_exact(WORD_SIZE).for_each(|word| {
         let op: OpCode = OpCode::try_from(word[0]).expect("Invalid OpCode");
         match op {
-            OpCode::Constant | OpCode::JumpNotTruthy | OpCode::Jump => {
+            OpCode::Constant
+            | OpCode::JumpNotTruthy
+            | OpCode::Jump
+            | OpCode::SetGlobal
+            | OpCode::GetGlobal => {
                 let operand = read_u16(&word[1..=2]);
                 assembly.push_str(&format!("{:04x} {} {}\n", address, op, operand))
             }
