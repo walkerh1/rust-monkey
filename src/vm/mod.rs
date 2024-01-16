@@ -6,7 +6,7 @@ use std::rc::Rc;
 mod tests;
 
 const STACK_SIZE: usize = 2048; // 2KB
-const GLOBAL_SIZE: usize = 65536;
+pub const GLOBAL_SIZE: usize = 65536;
 
 const TRUE: Object = Object::Boolean(true);
 const FALSE: Object = Object::Boolean(false);
@@ -15,16 +15,24 @@ const NULL: Object = Object::Null;
 #[derive(Debug, PartialEq)]
 pub struct VirtualMachine {
     stack: Vec<Rc<Object>>,
-    globals: Vec<Rc<Object>>,
+    pub globals: Vec<Rc<Object>>,
 }
 
 impl VirtualMachine {
-    pub fn run(byte_code: ByteCode) -> Result<Rc<Object>, VmError> {
-        let mut vm = VirtualMachine {
+    pub fn new() -> Self {
+        VirtualMachine {
             stack: Vec::with_capacity(STACK_SIZE),
             globals: vec![Rc::new(Object::Null); GLOBAL_SIZE],
-        };
+        }
+    }
 
+    pub fn new_with_global_state(globals: Vec<Rc<Object>>) -> VirtualMachine {
+        let mut vm = VirtualMachine::new();
+        vm.globals = globals;
+        vm
+    }
+
+    pub fn run(&mut self, byte_code: ByteCode) -> Result<Rc<Object>, VmError> {
         let mut last_popped = None;
 
         let ByteCode(instructions, constants) = byte_code;
@@ -43,7 +51,7 @@ impl VirtualMachine {
                 OpCode::Constant => {
                     let const_index = read_u16(&word[1..=2]);
                     let object = Rc::clone(&constants[const_index as usize]);
-                    vm.push(&object)?;
+                    self.push(&object)?;
                 }
                 OpCode::Add
                 | OpCode::Subtract
@@ -52,22 +60,22 @@ impl VirtualMachine {
                 | OpCode::Equal
                 | OpCode::NotEqual
                 | OpCode::GreaterThan => {
-                    vm.execute_binary_expression(op)?;
+                    self.execute_binary_expression(op)?;
                 }
                 OpCode::True => {
-                    vm.push(&Rc::new(TRUE))?;
+                    self.push(&Rc::new(TRUE))?;
                 }
                 OpCode::False => {
-                    vm.push(&Rc::new(FALSE))?;
+                    self.push(&Rc::new(FALSE))?;
                 }
                 OpCode::Minus => {
-                    vm.execute_minus_expression()?;
+                    self.execute_minus_expression()?;
                 }
                 OpCode::Bang => {
-                    vm.execute_bang_expression()?;
+                    self.execute_bang_expression()?;
                 }
                 OpCode::Pop => {
-                    last_popped = Some(vm.pop()?);
+                    last_popped = Some(self.pop()?);
                 }
                 OpCode::Jump => {
                     let pos = read_u16(&word[1..=2]) as usize;
@@ -76,22 +84,22 @@ impl VirtualMachine {
                 }
                 OpCode::JumpNotTruthy => {
                     let pos = read_u16(&word[1..=2]) as usize;
-                    let condition = vm.pop()?;
+                    let condition = self.pop()?;
                     if !VirtualMachine::is_truthy(&*condition) {
                         ip = pos;
                         continue;
                     }
                 }
                 OpCode::Null => {
-                    vm.push(&Rc::new(NULL))?;
+                    self.push(&Rc::new(NULL))?;
                 }
                 OpCode::SetGlobal => {
                     let global_idx = read_u16(&word[1..=2]) as usize;
-                    vm.globals[global_idx] = vm.pop()?;
+                    self.globals[global_idx] = self.pop()?;
                 }
                 OpCode::GetGlobal => {
                     let global_idx = read_u16(&word[1..=2]) as usize;
-                    vm.push(&vm.globals[global_idx].clone())?;
+                    self.push(&self.globals[global_idx].clone())?;
                 }
             }
 

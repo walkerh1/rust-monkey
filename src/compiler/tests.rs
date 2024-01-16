@@ -10,7 +10,8 @@ fn parse_and_compile(input: &str) -> (Option<ByteCode>, Option<CompilerError>) {
     let mut byte_code = None;
     let mut error = None;
     let ast = Parser::parse_program(input).expect("got a parsing error");
-    match Compiler::compile(ast) {
+    let mut compiler = Compiler::new();
+    match compiler.compile(ast) {
         Ok(result) => byte_code = Some(result),
         Err(err) => error = Some(err),
     }

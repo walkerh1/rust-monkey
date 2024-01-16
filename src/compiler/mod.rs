@@ -2,7 +2,6 @@ use crate::code::{make, Instructions, OpCode, WORD_SIZE};
 use crate::evaluator::object::Object;
 use crate::parser::ast::{Expression, Infix, Prefix, Program, Statement};
 use crate::symtab::SymbolTable;
-use std::borrow::Borrow;
 use std::rc::Rc;
 
 mod tests;
@@ -13,20 +12,30 @@ pub struct ByteCode(pub Instructions, pub Vec<Rc<Object>>);
 #[derive(Debug, PartialEq)]
 pub struct Compiler {
     instructions: Instructions,
-    constants: Vec<Rc<Object>>,
-    symbol_table: SymbolTable,
+    pub constants: Vec<Rc<Object>>,
+    pub symbol_table: SymbolTable,
 }
 
 impl Compiler {
-    pub fn compile(program: Program) -> Result<ByteCode, CompilerError> {
-        let mut compiler = Compiler {
+    pub fn new() -> Self {
+        Compiler {
             instructions: vec![],
             constants: vec![],
             symbol_table: SymbolTable::new(),
-        };
+        }
+    }
+
+    pub fn new_with_state(symbol_table: SymbolTable, constants: Vec<Rc<Object>>) -> Self {
+        let mut compiler = Self::new();
+        compiler.symbol_table = symbol_table;
+        compiler.constants = constants;
+        compiler
+    }
+
+    pub fn compile(&mut self, program: Program) -> Result<ByteCode, CompilerError> {
         let Program(statements) = program;
-        compiler.compile_statements(&statements)?;
-        Ok(ByteCode(compiler.instructions, compiler.constants))
+        self.compile_statements(&statements)?;
+        Ok(ByteCode(self.instructions.clone(), self.constants.clone()))
     }
 
     fn compile_statements(&mut self, statements: &[Statement]) -> Result<(), CompilerError> {

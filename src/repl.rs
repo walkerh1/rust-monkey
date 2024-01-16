@@ -1,8 +1,7 @@
-use crate::compiler::Compiler;
-use crate::evaluator::environment::Environment;
 use crate::parser::Parser;
-use crate::vm::VirtualMachine;
-use std::cell::RefCell;
+use crate::symtab::SymbolTable;
+use crate::vm::{VirtualMachine, GLOBAL_SIZE};
+use crate::{compiler::Compiler, evaluator::object::Object};
 use std::io::{self, Write};
 use std::rc::Rc;
 
@@ -15,7 +14,9 @@ impl Repl {
         let reader = io::stdin();
         let mut writer = io::stdout();
 
-        let _env = Rc::new(RefCell::new(Environment::new()));
+        let mut symtab = SymbolTable::new();
+        let mut constants = vec![];
+        let mut globals = vec![Rc::new(Object::Null); GLOBAL_SIZE];
 
         loop {
             writer.write_all(PROMPT.as_bytes())?;
@@ -38,18 +39,30 @@ impl Repl {
                 }
             };
 
-            let byte_code = match Compiler::compile(program) {
+            let mut compiler = Compiler::new_with_state(symtab, constants);
+            let mut vm = VirtualMachine::new_with_global_state(globals);
+
+            let byte_code = match compiler.compile(program) {
                 Ok(res) => res,
                 Err(e) => {
                     println!("{e:?}");
+                    symtab = compiler.symbol_table;
+                    constants = compiler.constants;
+                    globals = vm.globals;
                     continue;
                 }
             };
 
-            match VirtualMachine::run(byte_code) {
+            match vm.run(byte_code) {
                 Ok(obj) => println!("{obj}"),
                 Err(e) => println!("{e:?}"),
             }
+
+            symtab = compiler.symbol_table;
+            constants = compiler.constants;
+            globals = vm.globals;
+
+            // println!("{symtab:?}");
         }
 
         Ok(())
