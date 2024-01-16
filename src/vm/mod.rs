@@ -6,6 +6,7 @@ use std::rc::Rc;
 mod tests;
 
 const STACK_SIZE: usize = 2048; // 2KB
+const GLOBAL_SIZE: usize = 65536;
 
 const TRUE: Object = Object::Boolean(true);
 const FALSE: Object = Object::Boolean(false);
@@ -14,12 +15,14 @@ const NULL: Object = Object::Null;
 #[derive(Debug, PartialEq)]
 pub struct VirtualMachine {
     stack: Vec<Rc<Object>>,
+    globals: Vec<Rc<Object>>,
 }
 
 impl VirtualMachine {
     pub fn run(byte_code: ByteCode) -> Result<Rc<Object>, VmError> {
         let mut vm = VirtualMachine {
             stack: Vec::with_capacity(STACK_SIZE),
+            globals: vec![Rc::new(Object::Null); GLOBAL_SIZE],
         };
 
         let mut last_popped = None;
@@ -82,8 +85,14 @@ impl VirtualMachine {
                 OpCode::Null => {
                     vm.push(&Rc::new(NULL))?;
                 }
-                OpCode::SetGlobal => todo!(),
-                OpCode::GetGlobal => todo!(),
+                OpCode::SetGlobal => {
+                    let global_idx = read_u16(&word[1..=2]) as usize;
+                    vm.globals[global_idx] = vm.pop()?;
+                }
+                OpCode::GetGlobal => {
+                    let global_idx = read_u16(&word[1..=2]) as usize;
+                    vm.push(&vm.globals[global_idx].clone())?;
+                }
             }
 
             ip += WORD_SIZE;
