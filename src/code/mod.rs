@@ -27,6 +27,7 @@ pub enum OpCode {
     SetGlobal,
     GetGlobal,
     Array,
+    Hash,
 }
 
 impl Display for OpCode {
@@ -54,6 +55,7 @@ impl Display for OpCode {
                 OpCode::SetGlobal => "OpSetGlobal",
                 OpCode::GetGlobal => "OpGetGlobal",
                 OpCode::Array => "OpArray",
+                OpCode::Hash => "OpHash",
             }
         )
     }
@@ -83,6 +85,7 @@ impl TryFrom<u8> for OpCode {
             0x10 => Ok(OpCode::SetGlobal),
             0x11 => Ok(OpCode::GetGlobal),
             0x12 => Ok(OpCode::Array),
+            0x13 => Ok(OpCode::Hash),
             _ => Err("Invalid OpCode"),
         }
     }
@@ -110,6 +113,7 @@ impl From<OpCode> for u8 {
             OpCode::SetGlobal => 0x10,
             OpCode::GetGlobal => 0x11,
             OpCode::Array => 0x12,
+            OpCode::Hash => 0x13,
         }
     }
 }
@@ -122,7 +126,8 @@ pub fn make(op: OpCode, operands: &[u32]) -> [u8; 4] {
         | OpCode::Jump
         | OpCode::SetGlobal
         | OpCode::GetGlobal
-        | OpCode::Array => {
+        | OpCode::Array
+        | OpCode::Hash => {
             instruction[0] = u8::from(op);
             let operand = (operands[0] as u16).to_be_bytes();
             instruction[1] = operand[0];
@@ -159,7 +164,8 @@ pub fn disassemble(instructions: &Instructions) -> String {
             | OpCode::Jump
             | OpCode::SetGlobal
             | OpCode::GetGlobal
-            | OpCode::Array => {
+            | OpCode::Array
+            | OpCode::Hash => {
                 let operand = read_u16(&word[1..=2]);
                 assembly.push_str(&format!("{:04x} {} {}\n", address, op, operand))
             }

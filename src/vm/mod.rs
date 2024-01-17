@@ -107,6 +107,7 @@ impl VirtualMachine {
                     let array = self.build_array(array_len)?;
                     self.push(&array)?;
                 }
+                OpCode::Hash => todo!(),
             }
 
             ip += WORD_SIZE;
