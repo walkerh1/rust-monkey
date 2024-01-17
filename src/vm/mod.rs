@@ -2,6 +2,7 @@ use crate::code::{read_u16, OpCode, WORD_SIZE};
 use crate::compiler::ByteCode;
 use crate::evaluator::object::{Hashable, Object};
 use std::collections::HashMap;
+use std::ops::Deref;
 use std::rc::Rc;
 
 mod tests;
@@ -112,7 +113,9 @@ impl VirtualMachine {
                     let hash = self.build_hash(hash_len)?;
                     self.push(&hash)?;
                 }
-                OpCode::Index => todo!(),
+                OpCode::Index => {
+                    self.execute_index_expression()?;
+                }
             }
 
             ip += WORD_SIZE;
@@ -147,6 +150,39 @@ impl VirtualMachine {
             table.insert(key, val);
         }
         Ok(Rc::new(Object::Hash(table)))
+    }
+
+    fn execute_index_expression(&mut self) -> Result<(), VmError> {
+        let index = self.pop()?;
+        let store = self.pop()?;
+
+        match (&*store, &*index) {
+            (Object::Array(array), Object::Integer(i)) => {
+                if *i < 0 || *i as usize >= array.len() {
+                    self.push(&Rc::new(NULL))
+                } else {
+                    self.push(&Rc::new(array[*i as usize].deref().clone()))
+                }
+            }
+            (Object::Hash(table), index) => {
+                let idx = match index {
+                    Object::Integer(i) => Hashable::Integer(*i),
+                    Object::Boolean(b) => Hashable::Boolean(*b),
+                    Object::String(s) => Hashable::String(s.clone()),
+                    _ => {
+                        return Err(VmError::UnhashableKey);
+                    }
+                };
+
+                match table.get(&idx) {
+                    Some(val) => self.push(val),
+                    None => self.push(&Rc::new(NULL)),
+                }
+            }
+            _ => {
+                return Err(VmError::IndexNotSupported);
+            }
+        }
     }
 
     fn execute_minus_expression(&mut self) -> Result<(), VmError> {
@@ -276,4 +312,5 @@ pub enum VmError {
     EmptyStack,
     IncompatibleTypes,
     UnhashableKey,
+    IndexNotSupported,
 }

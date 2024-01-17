@@ -448,3 +448,93 @@ fn test_hash_literal_three() {
     assert_eq!(error, None);
     assert_eq!(result, Some(expected));
 }
+
+#[test]
+fn test_index_expression_one() {
+    let input = "[1, 2, 3][1]";
+    let expected = Rc::new(Object::Integer(2));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_index_expression_two() {
+    let input = "[1, 2, 3][1 + 1]";
+    let expected = Rc::new(Object::Integer(3));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_index_expression_three() {
+    let input = "[[1, 2, 3]][0][0]";
+    let expected = Rc::new(Object::Integer(1));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_index_expression_four() {
+    let input = "[][0]";
+    let expected = Rc::new(Object::Null);
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_index_expression_five() {
+    let input = "[1, 2][40]";
+    let expected = Rc::new(Object::Null);
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_index_expression_six() {
+    let input = "[1, 2][-1]";
+    let expected = Rc::new(Object::Null);
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_index_expression_seven() {
+    let input = "{1: 2}[0]";
+    let expected = Rc::new(Object::Null);
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_index_expression_eight() {
+    let input = "{}[0]";
+    let expected = Rc::new(Object::Null);
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_index_expression_nine() {
+    let input = "{1: 1, 2: 2}[1]";
+    let expected = Rc::new(Object::Integer(1));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_index_expression_ten() {
+    let input = "{1: 1, 2: 2}[2]";
+    let expected = Rc::new(Object::Integer(2));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
