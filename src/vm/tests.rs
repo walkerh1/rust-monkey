@@ -379,3 +379,38 @@ fn test_string_expression_three() {
     assert_eq!(error, None);
     assert_eq!(result, Some(expected));
 }
+
+#[test]
+fn test_array_expression_one() {
+    let input = "[]";
+    let expected = Rc::new(Object::Array(vec![]));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_array_expression_two() {
+    let input = "[1, 2, 3]";
+    let expected = Rc::new(Object::Array(vec![
+        Rc::new(Object::Integer(1)),
+        Rc::new(Object::Integer(2)),
+        Rc::new(Object::Integer(3)),
+    ]));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_array_expression_three() {
+    let input = "[1 + 2, 3 - 4, 5 * 6]";
+    let expected = Rc::new(Object::Array(vec![
+        Rc::new(Object::Integer(3)),
+        Rc::new(Object::Integer(-1)),
+        Rc::new(Object::Integer(30)),
+    ]));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}

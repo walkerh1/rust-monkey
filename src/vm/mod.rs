@@ -1,6 +1,7 @@
 use crate::code::{read_u16, OpCode, WORD_SIZE};
 use crate::compiler::ByteCode;
 use crate::evaluator::object::Object;
+use std::fs::read;
 use std::rc::Rc;
 
 mod tests;
@@ -101,7 +102,11 @@ impl VirtualMachine {
                     let global_idx = read_u16(&word[1..=2]) as usize;
                     self.push(&self.globals[global_idx].clone())?;
                 }
-                OpCode::Array => todo!(),
+                OpCode::Array => {
+                    let array_len = read_u16(&word[1..=2]) as usize;
+                    let array = self.build_array(array_len)?;
+                    self.push(&array)?;
+                }
             }
 
             ip += WORD_SIZE;
@@ -111,6 +116,14 @@ impl VirtualMachine {
             Some(obj) => Ok(obj),
             None => Err(VmError::EmptyStack),
         }
+    }
+
+    fn build_array(&mut self, length: usize) -> Result<Rc<Object>, VmError> {
+        let mut elements = vec![Rc::new(Object::Null); length];
+        for i in 1..=length {
+            elements[length - i] = self.pop()?;
+        }
+        Ok(Rc::new(Object::Array(elements)))
     }
 
     fn execute_minus_expression(&mut self) -> Result<(), VmError> {
