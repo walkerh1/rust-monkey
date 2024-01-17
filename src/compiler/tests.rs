@@ -440,3 +440,41 @@ two;
     assert_eq!(error, None);
     assert_eq!(byte_code, Some(expected));
 }
+
+#[test]
+fn test_compile_string_literal() {
+    let input = "\"monkey\"";
+    let expected = ByteCode(
+        vec![make(OpCode::Constant, &[0_u32]), make(OpCode::Pop, &[])]
+            .into_iter()
+            .flatten()
+            .collect::<Vec<u8>>(),
+        vec![Rc::new(Object::String("monkey".to_string()))],
+    );
+    let (byte_code, error) = parse_and_compile(input);
+    assert_eq!(error, None);
+    assert_eq!(byte_code, Some(expected));
+}
+
+#[test]
+fn test_compile_string_literal_addition() {
+    let input = "\"mon\" + \"key\"";
+    let expected = ByteCode(
+        vec![
+            make(OpCode::Constant, &[0_u32]),
+            make(OpCode::Constant, &[1_u32]),
+            make(OpCode::Add, &[]),
+            make(OpCode::Pop, &[]),
+        ]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<u8>>(),
+        vec![
+            Rc::new(Object::String("mon".to_string())),
+            Rc::new(Object::String("key".to_string())),
+        ],
+    );
+    let (byte_code, error) = parse_and_compile(input);
+    assert_eq!(error, None);
+    assert_eq!(byte_code, Some(expected));
+}

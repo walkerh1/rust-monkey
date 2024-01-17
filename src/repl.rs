@@ -61,8 +61,6 @@ impl Repl {
             symtab = compiler.symbol_table;
             constants = compiler.constants;
             globals = vm.globals;
-
-            // println!("{symtab:?}");
         }
 
         Ok(())

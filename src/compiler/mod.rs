@@ -102,7 +102,11 @@ impl Compiler {
             }
             Expression::Function(_, _) => todo!(),
             Expression::Call(_, _) => todo!(),
-            Expression::String(_) => todo!(),
+            Expression::String(val) => {
+                let str = Object::String(val.clone());
+                let address = self.add_constant(str);
+                self.emit(OpCode::Constant, &[address]);
+            }
             Expression::Array(_) => todo!(),
             Expression::Index(_, _) => todo!(),
             Expression::Hash(_) => todo!(),
