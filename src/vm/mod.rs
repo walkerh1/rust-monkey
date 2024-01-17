@@ -2,8 +2,6 @@ use crate::code::{read_u16, OpCode, WORD_SIZE};
 use crate::compiler::ByteCode;
 use crate::evaluator::object::{Hashable, Object};
 use std::collections::HashMap;
-use std::fs::read;
-use std::ops::Deref;
 use std::rc::Rc;
 
 mod tests;
@@ -114,6 +112,7 @@ impl VirtualMachine {
                     let hash = self.build_hash(hash_len)?;
                     self.push(&hash)?;
                 }
+                OpCode::Index => todo!(),
             }
 
             ip += WORD_SIZE;
