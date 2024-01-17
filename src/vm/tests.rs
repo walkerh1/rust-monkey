@@ -352,3 +352,30 @@ fn test_global_let_statement_three() {
     assert_eq!(error, None);
     assert_eq!(result, Some(expected));
 }
+
+#[test]
+fn test_string_expression_one() {
+    let input = "\"monkey\"";
+    let expected = Rc::new(Object::String("monkey".to_string()));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_string_expression_two() {
+    let input = "\"mon\" + \"key\"";
+    let expected = Rc::new(Object::String("monkey".to_string()));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_string_expression_three() {
+    let input = "\"mon\" + \"key\" + \"banana\"";
+    let expected = Rc::new(Object::String("monkeybanana".to_string()));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}

@@ -160,6 +160,10 @@ impl VirtualMachine {
                 let result = if left_val > right_val { TRUE } else { FALSE };
                 self.push(&Rc::new(result))?;
             }
+            (Object::String(left_val), OpCode::Add, Object::String(right_val)) => {
+                let result = Object::String(left_val.to_owned() + right_val);
+                self.push(&Rc::new(result))?;
+            }
             _ => return Err(VmError::IncompatibleTypes),
         }
         Ok(())
