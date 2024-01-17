@@ -1,7 +1,9 @@
 use crate::code::{read_u16, OpCode, WORD_SIZE};
 use crate::compiler::ByteCode;
-use crate::evaluator::object::Object;
+use crate::evaluator::object::{Hashable, Object};
+use std::collections::HashMap;
 use std::fs::read;
+use std::ops::Deref;
 use std::rc::Rc;
 
 mod tests;
@@ -107,7 +109,11 @@ impl VirtualMachine {
                     let array = self.build_array(array_len)?;
                     self.push(&array)?;
                 }
-                OpCode::Hash => todo!(),
+                OpCode::Hash => {
+                    let hash_len = read_u16(&word[1..=2]) as usize;
+                    let hash = self.build_hash(hash_len)?;
+                    self.push(&hash)?;
+                }
             }
 
             ip += WORD_SIZE;
@@ -125,6 +131,23 @@ impl VirtualMachine {
             elements[length - i] = self.pop()?;
         }
         Ok(Rc::new(Object::Array(elements)))
+    }
+
+    fn build_hash(&mut self, length: usize) -> Result<Rc<Object>, VmError> {
+        let mut table = HashMap::new();
+        for _ in (0..length).step_by(2) {
+            let val = self.pop()?;
+            let key = match &*self.pop()? {
+                Object::Integer(i) => Hashable::Integer(*i),
+                Object::Boolean(b) => Hashable::Boolean(*b),
+                Object::String(s) => Hashable::String(s.clone()),
+                _ => {
+                    return Err(VmError::UnhashableKey);
+                }
+            };
+            table.insert(key, val);
+        }
+        Ok(Rc::new(Object::Hash(table)))
     }
 
     fn execute_minus_expression(&mut self) -> Result<(), VmError> {
@@ -253,4 +276,5 @@ pub enum VmError {
     StackUnderflow,
     EmptyStack,
     IncompatibleTypes,
+    UnhashableKey,
 }

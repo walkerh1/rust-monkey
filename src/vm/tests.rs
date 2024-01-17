@@ -1,7 +1,8 @@
 use crate::compiler::Compiler;
-use crate::evaluator::object::Object;
+use crate::evaluator::object::{Hashable, Object};
 use crate::parser::Parser;
 use crate::vm::{VirtualMachine, VmError, STACK_SIZE};
+use std::collections::HashMap;
 use std::rc::Rc;
 
 #[cfg(test)]
@@ -410,6 +411,39 @@ fn test_array_expression_three() {
         Rc::new(Object::Integer(-1)),
         Rc::new(Object::Integer(30)),
     ]));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_hash_literal_one() {
+    let input = "{}";
+    let expected = Rc::new(Object::Hash(HashMap::new()));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_hash_literal_two() {
+    let input = "{1: 2, 3: 4}";
+    let expected = Rc::new(Object::Hash(HashMap::from([
+        (Hashable::Integer(1), Rc::new(Object::Integer(2))),
+        (Hashable::Integer(3), Rc::new(Object::Integer(4))),
+    ])));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_hash_literal_three() {
+    let input = "{1 + 1: 2 * 2, 4 - 3: 12 / 4}";
+    let expected = Rc::new(Object::Hash(HashMap::from([
+        (Hashable::Integer(2), Rc::new(Object::Integer(4))),
+        (Hashable::Integer(1), Rc::new(Object::Integer(3))),
+    ])));
     let (result, error) = compile_and_run(input);
     assert_eq!(error, None);
     assert_eq!(result, Some(expected));
