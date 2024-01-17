@@ -114,7 +114,13 @@ impl Compiler {
                 self.emit(OpCode::Array, &[val.len() as u32]);
             }
             Expression::Index(_, _) => todo!(),
-            Expression::Hash(_) => todo!(),
+            Expression::Hash(val) => {
+                for (k, v) in val {
+                    self.compile_expression(k)?;
+                    self.compile_expression(v)?;
+                }
+                self.emit(OpCode::Hash, &[(val.len() * 2) as u32]);
+            }
             Expression::While(_, _) => todo!(),
         }
         Ok(())

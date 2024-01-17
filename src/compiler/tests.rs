@@ -552,3 +552,82 @@ fn test_compile_array_literal_three() {
     assert_eq!(error, None);
     assert_eq!(byte_code, Some(expected));
 }
+
+#[test]
+fn test_compile_hash_literal_one() {
+    let input = "{}";
+    let expected = ByteCode(
+        vec![make(OpCode::Hash, &[0_u32]), make(OpCode::Pop, &[])]
+            .into_iter()
+            .flatten()
+            .collect::<Vec<u8>>(),
+        vec![],
+    );
+    let (byte_code, error) = parse_and_compile(input);
+    assert_eq!(error, None);
+    assert_eq!(byte_code, Some(expected));
+}
+
+#[test]
+fn test_compile_hash_literal_two() {
+    let input = "{1: 2, 3: 4, 5: 6}";
+    let expected = ByteCode(
+        vec![
+            make(OpCode::Constant, &[0_u32]),
+            make(OpCode::Constant, &[1_u32]),
+            make(OpCode::Constant, &[2_u32]),
+            make(OpCode::Constant, &[3_u32]),
+            make(OpCode::Constant, &[4_u32]),
+            make(OpCode::Constant, &[5_u32]),
+            make(OpCode::Hash, &[6_u32]),
+            make(OpCode::Pop, &[]),
+        ]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<u8>>(),
+        vec![
+            Rc::new(Object::Integer(1)),
+            Rc::new(Object::Integer(2)),
+            Rc::new(Object::Integer(3)),
+            Rc::new(Object::Integer(4)),
+            Rc::new(Object::Integer(5)),
+            Rc::new(Object::Integer(6)),
+        ],
+    );
+    let (byte_code, error) = parse_and_compile(input);
+    assert_eq!(error, None);
+    assert_eq!(byte_code, Some(expected));
+}
+
+#[test]
+fn test_compile_hash_literal_three() {
+    let input = "{1: 2 + 3, 4: 5 * 6}";
+    let expected = ByteCode(
+        vec![
+            make(OpCode::Constant, &[0_u32]),
+            make(OpCode::Constant, &[1_u32]),
+            make(OpCode::Constant, &[2_u32]),
+            make(OpCode::Add, &[]),
+            make(OpCode::Constant, &[3_u32]),
+            make(OpCode::Constant, &[4_u32]),
+            make(OpCode::Constant, &[5_u32]),
+            make(OpCode::Multiply, &[]),
+            make(OpCode::Hash, &[4_u32]),
+            make(OpCode::Pop, &[]),
+        ]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<u8>>(),
+        vec![
+            Rc::new(Object::Integer(1)),
+            Rc::new(Object::Integer(2)),
+            Rc::new(Object::Integer(3)),
+            Rc::new(Object::Integer(4)),
+            Rc::new(Object::Integer(5)),
+            Rc::new(Object::Integer(6)),
+        ],
+    );
+    let (byte_code, error) = parse_and_compile(input);
+    assert_eq!(error, None);
+    assert_eq!(byte_code, Some(expected));
+}
