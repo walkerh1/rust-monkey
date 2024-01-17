@@ -107,7 +107,12 @@ impl Compiler {
                 let address = self.add_constant(str);
                 self.emit(OpCode::Constant, &[address]);
             }
-            Expression::Array(_) => todo!(),
+            Expression::Array(val) => {
+                for exp in val.into_iter() {
+                    self.compile_expression(exp)?;
+                }
+                self.emit(OpCode::Array, &[val.len() as u32]);
+            }
             Expression::Index(_, _) => todo!(),
             Expression::Hash(_) => todo!(),
             Expression::While(_, _) => todo!(),

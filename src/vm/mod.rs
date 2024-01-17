@@ -101,6 +101,7 @@ impl VirtualMachine {
                     let global_idx = read_u16(&word[1..=2]) as usize;
                     self.push(&self.globals[global_idx].clone())?;
                 }
+                OpCode::Array => todo!(),
             }
 
             ip += WORD_SIZE;
