@@ -631,3 +631,63 @@ fn test_compile_hash_literal_three() {
     assert_eq!(error, None);
     assert_eq!(byte_code, Some(expected));
 }
+
+#[test]
+fn test_compile_index_expression_one() {
+    let input = "[1, 2, 3][1 + 1]";
+    let expected = ByteCode(
+        vec![
+            make(OpCode::Constant, &[0_u32]),
+            make(OpCode::Constant, &[1_u32]),
+            make(OpCode::Constant, &[2_u32]),
+            make(OpCode::Array, &[3_u32]),
+            make(OpCode::Constant, &[3_u32]),
+            make(OpCode::Constant, &[4_u32]),
+            make(OpCode::Add, &[]),
+            make(OpCode::Index, &[]),
+            make(OpCode::Pop, &[]),
+        ]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<u8>>(),
+        vec![
+            Rc::new(Object::Integer(1)),
+            Rc::new(Object::Integer(2)),
+            Rc::new(Object::Integer(3)),
+            Rc::new(Object::Integer(1)),
+            Rc::new(Object::Integer(1)),
+        ],
+    );
+    let (byte_code, error) = parse_and_compile(input);
+    assert_eq!(error, None);
+    assert_eq!(byte_code, Some(expected));
+}
+
+#[test]
+fn test_compile_index_expression_three() {
+    let input = "{1: 2}[2 - 1]";
+    let expected = ByteCode(
+        vec![
+            make(OpCode::Constant, &[0_u32]),
+            make(OpCode::Constant, &[1_u32]),
+            make(OpCode::Hash, &[2_u32]),
+            make(OpCode::Constant, &[2_u32]),
+            make(OpCode::Constant, &[3_u32]),
+            make(OpCode::Subtract, &[]),
+            make(OpCode::Index, &[]),
+            make(OpCode::Pop, &[]),
+        ]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<u8>>(),
+        vec![
+            Rc::new(Object::Integer(1)),
+            Rc::new(Object::Integer(2)),
+            Rc::new(Object::Integer(2)),
+            Rc::new(Object::Integer(1)),
+        ],
+    );
+    let (byte_code, error) = parse_and_compile(input);
+    assert_eq!(error, None);
+    assert_eq!(byte_code, Some(expected));
+}
