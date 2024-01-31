@@ -691,3 +691,23 @@ fn test_compile_index_expression_three() {
     assert_eq!(error, None);
     assert_eq!(byte_code, Some(expected));
 }
+
+#[test]
+fn test_compile_function_one() {
+    let input = "fn() { return 5 + 10 }";
+    let expected = ByteCode(
+        vec![
+            make(OpCode::Constant, &[0_u32]),
+            make(OpCode::Constant, &[1_u32]),
+            make(OpCode::Add, &[]),
+            make(OpCode::ReturnValue, &[]),
+        ]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<u8>>(),
+        vec![Rc::new(Object::Integer(5)), Rc::new(Object::Integer(10))],
+    );
+    let (byte_code, error) = parse_and_compile(input);
+    assert_eq!(error, None);
+    assert_eq!(byte_code, Some(expected));
+}
