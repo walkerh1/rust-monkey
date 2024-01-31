@@ -29,6 +29,7 @@ pub enum OpCode {
     Array,
     Hash,
     Index,
+    Call,
 }
 
 impl Display for OpCode {
@@ -58,6 +59,7 @@ impl Display for OpCode {
                 OpCode::Array => "OpArray",
                 OpCode::Hash => "OpHash",
                 OpCode::Index => "OpIndex",
+                OpCode::Call => "OpCall",
             }
         )
     }
@@ -89,6 +91,7 @@ impl TryFrom<u8> for OpCode {
             0x12 => Ok(OpCode::Array),
             0x13 => Ok(OpCode::Hash),
             0x14 => Ok(OpCode::Index),
+            0x15 => Ok(OpCode::Call),
             _ => Err("Invalid OpCode"),
         }
     }
@@ -118,6 +121,7 @@ impl From<OpCode> for u8 {
             OpCode::Array => 0x12,
             OpCode::Hash => 0x13,
             OpCode::Index => 0x14,
+            OpCode::Call => 0x15,
         }
     }
 }
@@ -150,7 +154,8 @@ pub fn make(op: OpCode, operands: &[u32]) -> [u8; 4] {
         | OpCode::Minus
         | OpCode::Bang
         | OpCode::Null
-        | OpCode::Index => {
+        | OpCode::Index
+        | OpCode::Call => {
             instruction[0] = u8::from(op);
         }
     }
@@ -187,7 +192,8 @@ pub fn disassemble(instructions: &Instructions) -> String {
             | OpCode::Minus
             | OpCode::Bang
             | OpCode::Null
-            | OpCode::Index => assembly.push_str(&format!("{:04x} {}\n", address, op)),
+            | OpCode::Index
+            | OpCode::Call => assembly.push_str(&format!("{:04x} {}\n", address, op)),
         }
         address += 4;
     });

@@ -116,6 +116,7 @@ impl VirtualMachine {
                 OpCode::Index => {
                     self.execute_index_expression()?;
                 }
+                OpCode::Call => todo!(),
             }
 
             ip += WORD_SIZE;

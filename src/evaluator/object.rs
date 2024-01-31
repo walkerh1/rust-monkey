@@ -1,3 +1,4 @@
+use crate::code::Instructions;
 use crate::evaluator::builtin::Builtin;
 use crate::evaluator::environment::Environment;
 use crate::parser::ast::Statement;
@@ -17,6 +18,7 @@ pub enum Object {
     Builtin(Builtin),
     Array(Vec<Rc<Object>>),
     Hash(HashMap<Hashable, Rc<Object>>),
+    CompiledFunc(Rc<CompiledFunction>),
 }
 
 impl Display for Object {
@@ -48,6 +50,7 @@ impl Display for Object {
                         .collect::<Vec<_>>()
                         .join(", ")
                 ),
+                Object::CompiledFunc(_) => "".to_string(),
             }
         )
     }
@@ -79,4 +82,9 @@ impl Display for Hashable {
             }
         )
     }
+}
+
+#[derive(Debug, PartialEq)]
+struct CompiledFunction {
+    instructions: Rc<Instructions>,
 }
