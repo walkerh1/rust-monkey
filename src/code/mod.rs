@@ -30,6 +30,8 @@ pub enum OpCode {
     Hash,
     Index,
     Call,
+    ReturnValue,
+    Return,
 }
 
 impl Display for OpCode {
@@ -60,6 +62,8 @@ impl Display for OpCode {
                 OpCode::Hash => "OpHash",
                 OpCode::Index => "OpIndex",
                 OpCode::Call => "OpCall",
+                OpCode::ReturnValue => "OpReturnValue",
+                OpCode::Return => "OpReturn",
             }
         )
     }
@@ -92,6 +96,8 @@ impl TryFrom<u8> for OpCode {
             0x13 => Ok(OpCode::Hash),
             0x14 => Ok(OpCode::Index),
             0x15 => Ok(OpCode::Call),
+            0x16 => Ok(OpCode::ReturnValue),
+            0x17 => Ok(OpCode::Return),
             _ => Err("Invalid OpCode"),
         }
     }
@@ -122,6 +128,8 @@ impl From<OpCode> for u8 {
             OpCode::Hash => 0x13,
             OpCode::Index => 0x14,
             OpCode::Call => 0x15,
+            OpCode::ReturnValue => 0x16,
+            OpCode::Return => 0x17,
         }
     }
 }
@@ -155,7 +163,9 @@ pub fn make(op: OpCode, operands: &[u32]) -> [u8; 4] {
         | OpCode::Bang
         | OpCode::Null
         | OpCode::Index
-        | OpCode::Call => {
+        | OpCode::Call
+        | OpCode::ReturnValue
+        | OpCode::Return => {
             instruction[0] = u8::from(op);
         }
     }
@@ -193,7 +203,9 @@ pub fn disassemble(instructions: &Instructions) -> String {
             | OpCode::Bang
             | OpCode::Null
             | OpCode::Index
-            | OpCode::Call => assembly.push_str(&format!("{:04x} {}\n", address, op)),
+            | OpCode::Call
+            | OpCode::ReturnValue
+            | OpCode::Return => assembly.push_str(&format!("{:04x} {}\n", address, op)),
         }
         address += 4;
     });

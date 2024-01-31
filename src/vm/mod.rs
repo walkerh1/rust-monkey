@@ -117,6 +117,8 @@ impl VirtualMachine {
                     self.execute_index_expression()?;
                 }
                 OpCode::Call => todo!(),
+                OpCode::ReturnValue => todo!(),
+                OpCode::Return => todo!(),
             }
 
             ip += WORD_SIZE;
