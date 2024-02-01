@@ -720,3 +720,78 @@ fn test_compile_function_one() {
     assert_eq!(error, None);
     assert_eq!(byte_code, Some(expected));
 }
+
+#[test]
+fn test_compile_function_two() {
+    let input = "fn() { 5 + 10 }";
+    let expected = ByteCode(
+        vec![make(OpCode::Constant, &[2_u32]), make(OpCode::Pop, &[])]
+            .into_iter()
+            .flatten()
+            .collect::<Vec<u8>>(),
+        vec![
+            Rc::new(Object::Integer(5)),
+            Rc::new(Object::Integer(10)),
+            Rc::new(Object::CompiledFunc(Rc::new(CompiledFunction::new(
+                vec![
+                    make(OpCode::Constant, &[0_u32]),
+                    make(OpCode::Constant, &[1_u32]),
+                    make(OpCode::Add, &[]),
+                    make(OpCode::ReturnValue, &[]),
+                ]
+                .into_iter()
+                .flatten()
+                .collect::<Vec<u8>>(),
+            )))),
+        ],
+    );
+    let (byte_code, error) = parse_and_compile(input);
+    assert_eq!(error, None);
+    assert_eq!(byte_code, Some(expected));
+}
+
+#[test]
+fn test_compile_function_three() {
+    let input = "fn() { 1; 2 }";
+    let expected = ByteCode(
+        vec![make(OpCode::Constant, &[2_u32]), make(OpCode::Pop, &[])]
+            .into_iter()
+            .flatten()
+            .collect::<Vec<u8>>(),
+        vec![
+            Rc::new(Object::Integer(1)),
+            Rc::new(Object::Integer(2)),
+            Rc::new(Object::CompiledFunc(Rc::new(CompiledFunction::new(
+                vec![
+                    make(OpCode::Constant, &[0_u32]),
+                    make(OpCode::Pop, &[]),
+                    make(OpCode::Constant, &[1_u32]),
+                    make(OpCode::ReturnValue, &[]),
+                ]
+                .into_iter()
+                .flatten()
+                .collect::<Vec<u8>>(),
+            )))),
+        ],
+    );
+    let (byte_code, error) = parse_and_compile(input);
+    assert_eq!(error, None);
+    assert_eq!(byte_code, Some(expected));
+}
+
+#[test]
+fn test_compile_function_four() {
+    let input = "fn() {}";
+    let expected = ByteCode(
+        vec![make(OpCode::Constant, &[0_u32]), make(OpCode::Pop, &[])]
+            .into_iter()
+            .flatten()
+            .collect::<Vec<u8>>(),
+        vec![Rc::new(Object::CompiledFunc(Rc::new(
+            CompiledFunction::new(make(OpCode::Return, &[]).to_vec()),
+        )))],
+    );
+    let (byte_code, error) = parse_and_compile(input);
+    assert_eq!(error, None);
+    assert_eq!(byte_code, Some(expected));
+}

@@ -121,6 +121,13 @@ impl Compiler {
             Expression::Function(_, body) => {
                 self.enter_scope();
                 self.compile_statement(body)?;
+                if self.last_instruction_is(OpCode::Pop) {
+                    let address = self.scopes[self.scope_idx].len() - WORD_SIZE;
+                    self.replace_instruction(address, &make(OpCode::ReturnValue, &[]))?;
+                }
+                if !self.last_instruction_is(OpCode::ReturnValue) {
+                    self.emit(OpCode::Return, &[]);
+                }
                 let instructions = self.leave_scope();
                 let compilted_fn =
                     Object::CompiledFunc(Rc::new(CompiledFunction::new(instructions)));
@@ -168,7 +175,7 @@ impl Compiler {
 
         self.compile_statement(consequence)?;
 
-        if self.last_instruction_is_pop() {
+        if self.last_instruction_is(OpCode::Pop) {
             self.remove_last_instruction();
         }
 
@@ -183,7 +190,7 @@ impl Compiler {
             let else_block = alternative.as_ref().unwrap();
             self.compile_statement(&else_block)?;
 
-            if self.last_instruction_is_pop() {
+            if self.last_instruction_is(OpCode::Pop) {
                 self.remove_last_instruction();
             }
         }
@@ -266,10 +273,13 @@ impl Compiler {
         (self.constants.len() - 1) as u32
     }
 
-    fn last_instruction_is_pop(&self) -> bool {
+    fn last_instruction_is(&self, target_opcode: OpCode) -> bool {
+        if self.scopes[self.scope_idx].len() == 0 {
+            return false;
+        }
         let last_op_code = self.get_instruction_at(self.scopes[self.scope_idx].len() - WORD_SIZE);
         if let Ok(op_code) = last_op_code {
-            return op_code == OpCode::Pop;
+            return op_code == target_opcode;
         }
         false
     }
