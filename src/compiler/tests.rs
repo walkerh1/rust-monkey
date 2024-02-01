@@ -2,7 +2,7 @@
 
 use crate::code::{make, OpCode};
 use crate::compiler::{ByteCode, Compiler, CompilerError};
-use crate::evaluator::object::Object;
+use crate::evaluator::object::{CompiledFunction, Object};
 use crate::parser::Parser;
 use std::rc::Rc;
 
@@ -694,18 +694,27 @@ fn test_compile_index_expression_three() {
 
 #[test]
 fn test_compile_function_one() {
-    let input = "fn() { return 5 + 10 }";
+    let input = "fn() { return 5 + 10; }";
     let expected = ByteCode(
+        vec![make(OpCode::Constant, &[2_u32]), make(OpCode::Pop, &[])]
+            .into_iter()
+            .flatten()
+            .collect::<Vec<u8>>(),
         vec![
-            make(OpCode::Constant, &[0_u32]),
-            make(OpCode::Constant, &[1_u32]),
-            make(OpCode::Add, &[]),
-            make(OpCode::ReturnValue, &[]),
-        ]
-        .into_iter()
-        .flatten()
-        .collect::<Vec<u8>>(),
-        vec![Rc::new(Object::Integer(5)), Rc::new(Object::Integer(10))],
+            Rc::new(Object::Integer(5)),
+            Rc::new(Object::Integer(10)),
+            Rc::new(Object::CompiledFunc(Rc::new(CompiledFunction::new(
+                vec![
+                    make(OpCode::Constant, &[0_u32]),
+                    make(OpCode::Constant, &[1_u32]),
+                    make(OpCode::Add, &[]),
+                    make(OpCode::ReturnValue, &[]),
+                ]
+                .into_iter()
+                .flatten()
+                .collect::<Vec<u8>>(),
+            )))),
+        ],
     );
     let (byte_code, error) = parse_and_compile(input);
     assert_eq!(error, None);

@@ -85,6 +85,14 @@ impl Display for Hashable {
 }
 
 #[derive(Debug, PartialEq)]
-struct CompiledFunction {
-    instructions: Rc<Instructions>,
+pub struct CompiledFunction {
+    pub instructions: Rc<Instructions>,
+}
+
+impl CompiledFunction {
+    pub fn new(instructions: Instructions) -> Self {
+        CompiledFunction {
+            instructions: Rc::new(instructions),
+        }
+    }
 }

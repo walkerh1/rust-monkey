@@ -1,5 +1,5 @@
 use crate::code::{make, Instructions, OpCode, WORD_SIZE};
-use crate::evaluator::object::Object;
+use crate::evaluator::object::{CompiledFunction, Object};
 use crate::parser::ast::{Expression, Infix, Prefix, Program, Statement};
 use crate::symtab::SymbolTable;
 use std::rc::Rc;
@@ -11,17 +11,19 @@ pub struct ByteCode(pub Instructions, pub Vec<Rc<Object>>);
 
 #[derive(Debug, PartialEq)]
 pub struct Compiler {
-    instructions: Instructions,
     pub constants: Vec<Rc<Object>>,
     pub symbol_table: SymbolTable,
+    scopes: Vec<Instructions>,
+    scope_idx: usize,
 }
 
 impl Compiler {
     pub fn new() -> Self {
         Compiler {
-            instructions: vec![],
             constants: vec![],
             symbol_table: SymbolTable::new(),
+            scopes: vec![Instructions::new()],
+            scope_idx: 0,
         }
     }
 
@@ -35,7 +37,20 @@ impl Compiler {
     pub fn compile(&mut self, program: Program) -> Result<ByteCode, CompilerError> {
         let Program(statements) = program;
         self.compile_statements(&statements)?;
-        Ok(ByteCode(self.instructions.clone(), self.constants.clone()))
+        Ok(ByteCode(
+            self.scopes[self.scope_idx].clone(),
+            self.constants.clone(),
+        ))
+    }
+
+    fn enter_scope(&mut self) {
+        self.scopes.push(Instructions::new());
+        self.scope_idx += 1;
+    }
+
+    fn leave_scope(&mut self) -> Instructions {
+        self.scope_idx -= 1;
+        self.scopes.pop().unwrap()
     }
 
     fn compile_statements(&mut self, statements: &[Statement]) -> Result<(), CompilerError> {
@@ -48,7 +63,10 @@ impl Compiler {
     fn compile_statement(&mut self, statement: &Statement) -> Result<(), CompilerError> {
         match statement {
             Statement::Let(id, val) => self.compile_let(id, val)?,
-            Statement::Return(_) => todo!(),
+            Statement::Return(val) => {
+                self.compile_expression(val)?;
+                self.emit(OpCode::ReturnValue, &[]);
+            }
             Statement::Expression(expression) => {
                 self.compile_expression(expression)?;
                 self.emit(OpCode::Pop, &[]);
@@ -100,7 +118,15 @@ impl Compiler {
             Expression::If(condition, consequence, alternative) => {
                 self.compile_if_expression(condition, consequence, alternative)?
             }
-            Expression::Function(_, _) => todo!(),
+            Expression::Function(_, body) => {
+                self.enter_scope();
+                self.compile_statement(body)?;
+                let instructions = self.leave_scope();
+                let compilted_fn =
+                    Object::CompiledFunc(Rc::new(CompiledFunction::new(instructions)));
+                let address = self.add_constant(compilted_fn);
+                self.emit(OpCode::Constant, &[address]);
+            }
             Expression::Call(_, _) => todo!(),
             Expression::String(val) => {
                 let str = Object::String(val.clone());
@@ -148,7 +174,7 @@ impl Compiler {
 
         let jump_pos = self.emit(OpCode::Jump, &[9999_u32]);
 
-        let after_consequence_pos = self.instructions.len() as u32;
+        let after_consequence_pos = self.scopes[self.scope_idx].len() as u32;
         self.change_operand(jump_not_truthy_pos as usize, after_consequence_pos)?;
 
         if alternative.is_none() {
@@ -162,7 +188,7 @@ impl Compiler {
             }
         }
 
-        let after_consequence_pos = self.instructions.len() as u32;
+        let after_consequence_pos = self.scopes[self.scope_idx].len() as u32;
         self.change_operand(jump_pos as usize, after_consequence_pos)?;
 
         Ok(())
@@ -241,7 +267,7 @@ impl Compiler {
     }
 
     fn last_instruction_is_pop(&self) -> bool {
-        let last_op_code = self.get_instruction_at(self.instructions.len() - WORD_SIZE);
+        let last_op_code = self.get_instruction_at(self.scopes[self.scope_idx].len() - WORD_SIZE);
         if let Ok(op_code) = last_op_code {
             return op_code == OpCode::Pop;
         }
@@ -250,7 +276,7 @@ impl Compiler {
 
     fn remove_last_instruction(&mut self) {
         for _ in 0..WORD_SIZE {
-            self.instructions.pop();
+            self.scopes[self.scope_idx].pop();
         }
     }
 
@@ -268,20 +294,21 @@ impl Compiler {
     ) -> Result<(), CompilerError> {
         let mut i = 0;
         for _ in 0..WORD_SIZE {
-            self.instructions[address + i] = new_instruction[i];
+            self.scopes[self.scope_idx][address + i] = new_instruction[i];
             i += 1;
         }
         Ok(())
     }
 
     fn get_instruction_at(&self, idx: usize) -> Result<OpCode, CompilerError> {
-        OpCode::try_from(self.instructions[idx] as u8).map_err(|_| CompilerError::InvalidOpCode)
+        OpCode::try_from(self.scopes[self.scope_idx][idx] as u8)
+            .map_err(|_| CompilerError::InvalidOpCode)
     }
 
     fn emit(&mut self, op: OpCode, operands: &[u32]) -> u32 {
         let instruction = make(op, operands);
-        let instruction_address = self.instructions.len();
-        self.instructions.extend(&instruction);
+        let instruction_address = self.scopes[self.scope_idx].len();
+        self.scopes[self.scope_idx].extend(&instruction);
         instruction_address as u32
     }
 }
