@@ -601,3 +601,28 @@ a();
     assert_eq!(error, None);
     assert_eq!(result, Some(expected));
 }
+
+#[test]
+fn test_calling_function_without_return_value() {
+    let input = "
+let a = fn() { };
+a();
+";
+    let expected = Rc::new(Object::Null);
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_calling_first_class_function() {
+    let input = "
+let a = fn() { 1 };
+let b = fn() { a };
+b()();
+";
+    let expected = Rc::new(Object::Integer(1));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}

@@ -140,7 +140,11 @@ impl VirtualMachine {
                     self.pop()?;
                     self.push(&return_val)?;
                 }
-                OpCode::Return => todo!(),
+                OpCode::Return => {
+                    self.pop_frame()?;
+                    self.pop()?;
+                    self.push(&Rc::new(NULL))?;
+                }
             }
 
             self.frames[self.frames_idx].ip += WORD_SIZE;
