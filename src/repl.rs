@@ -40,7 +40,6 @@ impl Repl {
             };
 
             let mut compiler = Compiler::new_with_state(symtab, constants);
-            let mut vm = VirtualMachine::new_with_global_state(globals);
 
             let byte_code = match compiler.compile(program) {
                 Ok(res) => res,
@@ -48,12 +47,13 @@ impl Repl {
                     println!("{e:?}");
                     symtab = compiler.symbol_table;
                     constants = compiler.constants;
-                    globals = vm.globals;
                     continue;
                 }
             };
 
-            match vm.run(byte_code) {
+            let mut vm = VirtualMachine::new_with_global_state(byte_code, globals);
+
+            match vm.run() {
                 Ok(obj) => println!("{obj}"),
                 Err(e) => println!("{e:?}"),
             }

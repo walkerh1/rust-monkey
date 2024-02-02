@@ -1,13 +1,16 @@
+use self::frame::Frame;
 use crate::code::{read_u16, OpCode, WORD_SIZE};
 use crate::compiler::ByteCode;
-use crate::evaluator::object::{Hashable, Object};
+use crate::evaluator::object::{CompiledFunction, Hashable, Object};
 use std::collections::HashMap;
 use std::ops::Deref;
 use std::rc::Rc;
 
+pub mod frame;
 mod tests;
 
 const STACK_SIZE: usize = 2048; // 2KB
+const MAX_FRAMES: usize = 1024; // 1KB
 pub const GLOBAL_SIZE: usize = 65536;
 
 const TRUE: Object = Object::Boolean(true);
@@ -16,33 +19,39 @@ const NULL: Object = Object::Null;
 
 #[derive(Debug, PartialEq)]
 pub struct VirtualMachine {
+    constants: Vec<Rc<Object>>,
     stack: Vec<Rc<Object>>,
     pub globals: Vec<Rc<Object>>,
+    frames: Vec<Frame>,
+    frames_idx: usize,
 }
 
 impl VirtualMachine {
-    pub fn new() -> Self {
+    pub fn new(bytecode: ByteCode) -> Self {
+        let ByteCode(instructions, constants) = bytecode;
         VirtualMachine {
+            constants,
             stack: Vec::with_capacity(STACK_SIZE),
             globals: vec![Rc::new(Object::Null); GLOBAL_SIZE],
+            frames: vec![Frame::new(CompiledFunction::new(instructions))],
+            frames_idx: 0,
         }
     }
 
-    pub fn new_with_global_state(globals: Vec<Rc<Object>>) -> VirtualMachine {
-        let mut vm = VirtualMachine::new();
+    pub fn new_with_global_state(bytecode: ByteCode, globals: Vec<Rc<Object>>) -> VirtualMachine {
+        let mut vm = VirtualMachine::new(bytecode);
         vm.globals = globals;
         vm
     }
 
-    pub fn run(&mut self, byte_code: ByteCode) -> Result<Rc<Object>, VmError> {
+    pub fn run(&mut self) -> Result<Rc<Object>, VmError> {
         let mut last_popped = None;
+        let mut ip: usize;
 
-        let ByteCode(instructions, constants) = byte_code;
+        while self.frames[self.frames_idx].ip < self.frames[self.frames_idx].instructions().len() {
+            ip = self.frames[self.frames_idx].ip;
 
-        let mut ip = 0;
-
-        while ip < instructions.len() {
-            let word = &instructions[ip..ip + WORD_SIZE];
+            let word = &self.frames[self.frames_idx].instructions()[ip..ip + WORD_SIZE];
 
             let op = match OpCode::try_from(word[0]) {
                 Ok(op_code) => op_code,
@@ -52,7 +61,7 @@ impl VirtualMachine {
             match op {
                 OpCode::Constant => {
                     let const_index = read_u16(&word[1..=2]);
-                    let object = Rc::clone(&constants[const_index as usize]);
+                    let object = Rc::clone(&self.constants[const_index as usize]);
                     self.push(&object)?;
                 }
                 OpCode::Add
@@ -81,14 +90,14 @@ impl VirtualMachine {
                 }
                 OpCode::Jump => {
                     let pos = read_u16(&word[1..=2]) as usize;
-                    ip = pos;
+                    self.frames[self.frames_idx].ip = pos;
                     continue;
                 }
                 OpCode::JumpNotTruthy => {
                     let pos = read_u16(&word[1..=2]) as usize;
                     let condition = self.pop()?;
                     if !VirtualMachine::is_truthy(&*condition) {
-                        ip = pos;
+                        self.frames[self.frames_idx].ip = pos;
                         continue;
                     }
                 }
@@ -121,7 +130,7 @@ impl VirtualMachine {
                 OpCode::Return => todo!(),
             }
 
-            ip += WORD_SIZE;
+            self.frames[self.frames_idx].ip += WORD_SIZE;
         }
 
         match last_popped {
@@ -305,6 +314,25 @@ impl VirtualMachine {
             None => Err(VmError::StackUnderflow),
         }
     }
+
+    fn push_frame(&mut self, frame: Frame) -> Result<(), VmError> {
+        if self.frames.len() == MAX_FRAMES {
+            return Err(VmError::FrameStackOverflow);
+        }
+        self.frames.push(frame);
+        self.frames_idx += 1;
+        Ok(())
+    }
+
+    fn pop_frame(&mut self) -> Result<Frame, VmError> {
+        if self.frames_idx > 0 {
+            self.frames_idx -= 1;
+        }
+        match self.frames.pop() {
+            Some(frame) => Ok(frame),
+            None => Err(VmError::FrameStackUnderflow),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -316,4 +344,6 @@ pub enum VmError {
     IncompatibleTypes,
     UnhashableKey,
     IndexNotSupported,
+    FrameStackUnderflow,
+    FrameStackOverflow,
 }

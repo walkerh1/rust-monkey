@@ -13,8 +13,8 @@ fn compile_and_run(input: &str) -> (Option<Rc<Object>>, Option<VmError>) {
     let ast = Parser::parse_program(input).expect("got a parsing error");
     let mut compiler = Compiler::new();
     let byte_code = compiler.compile(ast).expect("got a compiler error");
-    let mut vm = VirtualMachine::new();
-    match vm.run(byte_code) {
+    let mut vm = VirtualMachine::new(byte_code);
+    match vm.run() {
         Ok(object) => result = Some(object),
         Err(err) => error = Some(err),
     }
