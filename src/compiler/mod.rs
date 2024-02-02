@@ -134,7 +134,10 @@ impl Compiler {
                 let address = self.add_constant(compilted_fn);
                 self.emit(OpCode::Constant, &[address]);
             }
-            Expression::Call(_, _) => todo!(),
+            Expression::Call(func, args) => {
+                self.compile_expression(func)?;
+                self.emit(OpCode::Call, &[]);
+            }
             Expression::String(val) => {
                 let str = Object::String(val.clone());
                 let address = self.add_constant(str);
