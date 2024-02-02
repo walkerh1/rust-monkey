@@ -125,8 +125,21 @@ impl VirtualMachine {
                 OpCode::Index => {
                     self.execute_index_expression()?;
                 }
-                OpCode::Call => todo!(),
-                OpCode::ReturnValue => todo!(),
+                OpCode::Call => match &*self.stack[self.stack.len() - 1] {
+                    Object::CompiledFunc(func) => {
+                        self.push_frame(Frame::new(func.deref().clone()))?;
+                        continue; // don't want to increment ip
+                    }
+                    _ => {
+                        return Err(VmError::CallingNonFunction);
+                    }
+                },
+                OpCode::ReturnValue => {
+                    let return_val = self.pop()?;
+                    self.pop_frame()?;
+                    self.pop()?;
+                    self.push(&return_val)?;
+                }
                 OpCode::Return => todo!(),
             }
 
@@ -346,4 +359,5 @@ pub enum VmError {
     IndexNotSupported,
     FrameStackUnderflow,
     FrameStackOverflow,
+    CallingNonFunction,
 }

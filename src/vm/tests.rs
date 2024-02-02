@@ -538,3 +538,66 @@ fn test_index_expression_ten() {
     assert_eq!(error, None);
     assert_eq!(result, Some(expected));
 }
+
+#[test]
+fn test_calling_function_with_no_args_one() {
+    let input = "
+let fivePlusTen = fn() { 5 + 10; };
+fivePlusTen();
+";
+    let expected = Rc::new(Object::Integer(15));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_calling_function_with_no_args_two() {
+    let input = "
+let a = fn() { 1 };
+let b = fn() { a() + 1 };
+let c = fn() { b() + 1 };
+c();
+";
+    let expected = Rc::new(Object::Integer(3));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_calling_function_with_no_args_three() {
+    let input = "
+let one = fn() { 1; };
+let two = fn() { 2; };
+one() + two();
+";
+    let expected = Rc::new(Object::Integer(3));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_calling_function_early_exit_one() {
+    let input = "
+let a = fn() { return 99; 100; };
+a();
+";
+    let expected = Rc::new(Object::Integer(99));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_calling_function_early_exit_two() {
+    let input = "
+let a = fn() { return 99; return 100; };
+a();
+";
+    let expected = Rc::new(Object::Integer(99));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}

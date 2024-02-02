@@ -84,7 +84,7 @@ impl Display for Hashable {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct CompiledFunction {
     pub instructions: Rc<Instructions>,
 }
