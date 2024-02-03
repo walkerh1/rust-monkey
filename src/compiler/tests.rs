@@ -857,3 +857,109 @@ fn test_compile_function_call_two() {
     assert_eq!(error, None);
     assert_eq!(byte_code, Some(expected));
 }
+
+#[test]
+fn test_let_statement_scope_one() {
+    let input = "
+let num = 55;
+fn() { num };
+";
+    let expected = ByteCode(
+        vec![
+            make(OpCode::Constant, &[0_u32]),
+            make(OpCode::SetGlobal, &[0_u32]),
+            make(OpCode::Constant, &[1_u32]),
+            make(OpCode::Pop, &[]),
+        ]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<u8>>(),
+        vec![
+            Rc::new(Object::Integer(55)),
+            Rc::new(Object::CompiledFunc(Rc::new(CompiledFunction::new(
+                vec![
+                    make(OpCode::GetGlobal, &[0_u32]),
+                    make(OpCode::ReturnValue, &[]),
+                ]
+                .into_iter()
+                .flatten()
+                .collect::<Vec<u8>>(),
+            )))),
+        ],
+    );
+    let (byte_code, error) = parse_and_compile(input);
+    assert_eq!(error, None);
+    assert_eq!(byte_code, Some(expected));
+}
+
+#[test]
+fn test_let_statement_scope_two() {
+    let input = "
+fn() { 
+    let num = 77;
+    num
+};
+";
+    let expected = ByteCode(
+        vec![make(OpCode::Constant, &[1_u32]), make(OpCode::Pop, &[])]
+            .into_iter()
+            .flatten()
+            .collect::<Vec<u8>>(),
+        vec![
+            Rc::new(Object::Integer(77)),
+            Rc::new(Object::CompiledFunc(Rc::new(CompiledFunction::new(
+                vec![
+                    make(OpCode::Constant, &[0_u32]),
+                    make(OpCode::SetLocal, &[0_u32]),
+                    make(OpCode::GetLocal, &[0_u32]),
+                    make(OpCode::ReturnValue, &[]),
+                ]
+                .into_iter()
+                .flatten()
+                .collect::<Vec<u8>>(),
+            )))),
+        ],
+    );
+    let (byte_code, error) = parse_and_compile(input);
+    assert_eq!(error, None);
+    assert_eq!(byte_code, Some(expected));
+}
+
+#[test]
+fn test_let_statement_scope_three() {
+    let input = "
+fn() { 
+    let a = 77;
+    let b = 55;
+    a + b
+}
+";
+    let expected = ByteCode(
+        vec![make(OpCode::Constant, &[2_u32]), make(OpCode::Pop, &[])]
+            .into_iter()
+            .flatten()
+            .collect::<Vec<u8>>(),
+        vec![
+            Rc::new(Object::Integer(77)),
+            Rc::new(Object::Integer(55)),
+            Rc::new(Object::CompiledFunc(Rc::new(CompiledFunction::new(
+                vec![
+                    make(OpCode::Constant, &[0_u32]),
+                    make(OpCode::SetLocal, &[0_u32]),
+                    make(OpCode::Constant, &[1_u32]),
+                    make(OpCode::SetLocal, &[1_u32]),
+                    make(OpCode::GetLocal, &[0_u32]),
+                    make(OpCode::GetLocal, &[1_u32]),
+                    make(OpCode::Add, &[]),
+                    make(OpCode::ReturnValue, &[]),
+                ]
+                .into_iter()
+                .flatten()
+                .collect::<Vec<u8>>(),
+            )))),
+        ],
+    );
+    let (byte_code, error) = parse_and_compile(input);
+    assert_eq!(error, None);
+    assert_eq!(byte_code, Some(expected));
+}
