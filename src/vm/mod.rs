@@ -145,6 +145,8 @@ impl VirtualMachine {
                     self.pop()?;
                     self.push(&Rc::new(NULL))?;
                 }
+                OpCode::SetLocal => todo!(),
+                OpCode::GetLocal => todo!(),
             }
 
             self.frames[self.frames_idx].ip += WORD_SIZE;
