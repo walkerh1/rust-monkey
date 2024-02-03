@@ -11,7 +11,7 @@ pub enum SymbolScope {
 #[derive(Debug, PartialEq)]
 pub struct Symbol {
     name: String,
-    scope: SymbolScope,
+    pub scope: SymbolScope,
     pub index: u32,
 }
 
@@ -27,7 +27,7 @@ impl Symbol {
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct SymbolTable {
-    outer: Option<Box<SymbolTable>>,
+    pub outer: Option<Box<SymbolTable>>,
     store: HashMap<String, Rc<Symbol>>,
     num_definitions: u32,
 }

@@ -1,7 +1,8 @@
 use crate::code::{make, Instructions, OpCode, WORD_SIZE};
 use crate::evaluator::object::{CompiledFunction, Object};
 use crate::parser::ast::{Expression, Infix, Prefix, Program, Statement};
-use crate::symtab::SymbolTable;
+use crate::symtab::{SymbolScope, SymbolTable};
+use std::ops::Deref;
 use std::rc::Rc;
 
 mod tests;
@@ -43,16 +44,6 @@ impl Compiler {
         ))
     }
 
-    fn enter_scope(&mut self) {
-        self.scopes.push(Instructions::new());
-        self.scope_idx += 1;
-    }
-
-    fn leave_scope(&mut self) -> Instructions {
-        self.scope_idx -= 1;
-        self.scopes.pop().unwrap()
-    }
-
     fn compile_statements(&mut self, statements: &[Statement]) -> Result<(), CompilerError> {
         for statement in statements.iter() {
             self.compile_statement(statement)?;
@@ -81,7 +72,10 @@ impl Compiler {
         self.compile_expression(val)?;
         if let Expression::Identifier(id) = id {
             let symbol = self.symbol_table.define(id.to_string());
-            self.emit(OpCode::SetGlobal, &[symbol.index]);
+            match symbol.scope {
+                SymbolScope::Global => self.emit(OpCode::SetGlobal, &[symbol.index]),
+                SymbolScope::Local => self.emit(OpCode::SetLocal, &[symbol.index]),
+            };
         }
         Ok(())
     }
@@ -96,9 +90,14 @@ impl Compiler {
     fn compile_expression(&mut self, expression: &Expression) -> Result<(), CompilerError> {
         match expression {
             Expression::Identifier(id) => match self.symbol_table.resolve(id.to_string()) {
-                Some(binding) => {
-                    self.emit(OpCode::GetGlobal, &[binding.index]);
-                }
+                Some(binding) => match binding.scope {
+                    SymbolScope::Global => {
+                        self.emit(OpCode::GetGlobal, &[binding.index]);
+                    }
+                    SymbolScope::Local => {
+                        self.emit(OpCode::GetLocal, &[binding.index]);
+                    }
+                },
                 None => {
                     return Err(CompilerError::UndefinedVariable);
                 }
@@ -323,6 +322,18 @@ impl Compiler {
         let instruction_address = self.scopes[self.scope_idx].len();
         self.scopes[self.scope_idx].extend(&instruction);
         instruction_address as u32
+    }
+
+    fn enter_scope(&mut self) {
+        self.symbol_table = SymbolTable::new_enclosed(self.symbol_table.clone());
+        self.scopes.push(Instructions::new());
+        self.scope_idx += 1;
+    }
+
+    fn leave_scope(&mut self) -> Instructions {
+        self.symbol_table = self.symbol_table.outer.as_ref().unwrap().as_ref().clone();
+        self.scope_idx -= 1;
+        self.scopes.pop().unwrap()
     }
 }
 
