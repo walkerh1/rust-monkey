@@ -971,3 +971,75 @@ fn() {
     assert_eq!(error, None);
     assert_eq!(byte_code, Some(expected));
 }
+
+#[test]
+fn test_arguments_in_function_calls_one() {
+    let input = "
+let arg = fn(a) { };
+arg(24);
+";
+    let expected = ByteCode(
+        vec![
+            make(OpCode::Constant, &[0_u32]),
+            make(OpCode::SetGlobal, &[0_u32]),
+            make(OpCode::GetGlobal, &[0_u32]),
+            make(OpCode::Constant, &[1_u32]),
+            make(OpCode::Call, &[1_u32]),
+            make(OpCode::Pop, &[]),
+        ]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<u8>>(),
+        vec![
+            Rc::new(Object::CompiledFunc(Rc::new(CompiledFunction::new(
+                vec![make(OpCode::Return, &[])]
+                    .into_iter()
+                    .flatten()
+                    .collect::<Vec<u8>>(),
+                0,
+            )))),
+            Rc::new(Object::Integer(24)),
+        ],
+    );
+    let (byte_code, error) = parse_and_compile(input);
+    assert_eq!(error, None);
+    assert_eq!(byte_code, Some(expected));
+}
+
+#[test]
+fn test_arguments_in_function_calls_two() {
+    let input = "
+let arg = fn(a, b, c) { };
+arg(1, 2, 3);
+";
+    let expected = ByteCode(
+        vec![
+            make(OpCode::Constant, &[0_u32]),
+            make(OpCode::SetGlobal, &[0_u32]),
+            make(OpCode::GetGlobal, &[0_u32]),
+            make(OpCode::Constant, &[1_u32]),
+            make(OpCode::Constant, &[2_u32]),
+            make(OpCode::Constant, &[3_u32]),
+            make(OpCode::Call, &[3_u32]),
+            make(OpCode::Pop, &[]),
+        ]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<u8>>(),
+        vec![
+            Rc::new(Object::CompiledFunc(Rc::new(CompiledFunction::new(
+                vec![make(OpCode::Return, &[])]
+                    .into_iter()
+                    .flatten()
+                    .collect::<Vec<u8>>(),
+                0,
+            )))),
+            Rc::new(Object::Integer(1)),
+            Rc::new(Object::Integer(2)),
+            Rc::new(Object::Integer(3)),
+        ],
+    );
+    let (byte_code, error) = parse_and_compile(input);
+    assert_eq!(error, None);
+    assert_eq!(byte_code, Some(expected));
+}

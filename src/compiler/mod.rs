@@ -136,7 +136,10 @@ impl Compiler {
             }
             Expression::Call(func, args) => {
                 self.compile_expression(func)?;
-                self.emit(OpCode::Call, &[0]);
+                for arg in args {
+                    self.compile_expression(arg)?;
+                }
+                self.emit(OpCode::Call, &[args.len() as u32]);
             }
             Expression::String(val) => {
                 let str = Object::String(val.clone());
