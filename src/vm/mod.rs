@@ -270,9 +270,6 @@ impl VirtualMachine {
     fn execute_binary_expression(&mut self, op: OpCode) -> Result<(), VmError> {
         let right = self.pop()?;
         let left = self.pop()?;
-        println!("stack: {:?}", self.stack);
-        println!("left: {left}");
-        println!("right: {right}");
         match (&*left, &op, &*right) {
             (Object::Integer(left_val), _, Object::Integer(right_val)) => {
                 self.execute_integer_operation(*left_val, op, *right_val)?;

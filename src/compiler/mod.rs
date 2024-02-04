@@ -2,7 +2,6 @@ use crate::code::{make, Instructions, OpCode, WORD_SIZE};
 use crate::evaluator::object::{CompiledFunction, Object};
 use crate::parser::ast::{Expression, Infix, Prefix, Program, Statement};
 use crate::symtab::{SymbolScope, SymbolTable};
-use std::ops::Deref;
 use std::rc::Rc;
 
 mod tests;
@@ -117,8 +116,14 @@ impl Compiler {
             Expression::If(condition, consequence, alternative) => {
                 self.compile_if_expression(condition, consequence, alternative)?
             }
-            Expression::Function(_, body) => {
+            Expression::Function(args, body) => {
                 self.enter_scope();
+                for arg in args {
+                    match arg {
+                        Expression::Identifier(id) => self.symbol_table.define(id.clone()),
+                        _ => todo!(),
+                    };
+                }
                 self.compile_statement(body)?;
                 if self.last_instruction_is(OpCode::Pop) {
                     let address = self.scopes[self.scope_idx].len() - WORD_SIZE;
