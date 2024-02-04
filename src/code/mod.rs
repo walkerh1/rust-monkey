@@ -145,7 +145,7 @@ impl From<OpCode> for u8 {
 pub fn make(op: OpCode, operands: &[u32]) -> [u8; 4] {
     let mut instruction = [0x00; 4];
     match op {
-        OpCode::SetLocal | OpCode::GetLocal => {
+        OpCode::SetLocal | OpCode::GetLocal | OpCode::Call => {
             instruction[0] = u8::from(op);
             instruction[1] = operands[0] as u8;
         }
@@ -175,7 +175,6 @@ pub fn make(op: OpCode, operands: &[u32]) -> [u8; 4] {
         | OpCode::Bang
         | OpCode::Null
         | OpCode::Index
-        | OpCode::Call
         | OpCode::ReturnValue
         | OpCode::Return => {
             instruction[0] = u8::from(op);
@@ -191,7 +190,7 @@ pub fn disassemble(instructions: &Instructions) -> String {
     instructions.chunks_exact(WORD_SIZE).for_each(|word| {
         let op: OpCode = OpCode::try_from(word[0]).expect("Invalid OpCode");
         match op {
-            OpCode::SetLocal | OpCode::GetLocal => {
+            OpCode::SetLocal | OpCode::GetLocal | OpCode::Call => {
                 assembly.push_str(&format!("{:04x} {} {}\n", address, op, &word[1]))
             }
             OpCode::Constant
@@ -218,7 +217,6 @@ pub fn disassemble(instructions: &Instructions) -> String {
             | OpCode::Bang
             | OpCode::Null
             | OpCode::Index
-            | OpCode::Call
             | OpCode::ReturnValue
             | OpCode::Return => assembly.push_str(&format!("{:04x} {}\n", address, op)),
         }

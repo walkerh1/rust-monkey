@@ -136,7 +136,7 @@ impl Compiler {
             }
             Expression::Call(func, args) => {
                 self.compile_expression(func)?;
-                self.emit(OpCode::Call, &[]);
+                self.emit(OpCode::Call, &[0]);
             }
             Expression::String(val) => {
                 let str = Object::String(val.clone());

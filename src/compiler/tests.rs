@@ -805,7 +805,7 @@ fn test_compile_function_call_one() {
     let expected = ByteCode(
         vec![
             make(OpCode::Constant, &[1_u32]),
-            make(OpCode::Call, &[]),
+            make(OpCode::Call, &[0_u32]),
             make(OpCode::Pop, &[]),
         ]
         .into_iter()
@@ -838,7 +838,7 @@ fn test_compile_function_call_two() {
             make(OpCode::Constant, &[1_u32]),
             make(OpCode::SetGlobal, &[0_u32]),
             make(OpCode::GetGlobal, &[0_u32]),
-            make(OpCode::Call, &[]),
+            make(OpCode::Call, &[0_u32]),
             make(OpCode::Pop, &[]),
         ]
         .into_iter()
