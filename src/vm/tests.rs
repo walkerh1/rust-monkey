@@ -626,3 +626,88 @@ b()();
     assert_eq!(error, None);
     assert_eq!(result, Some(expected));
 }
+
+#[test]
+fn test_calling_functions_with_bindings_one() {
+    let input = "
+let one = fn() { let one = 1; one };
+one();
+";
+    let expected = Rc::new(Object::Integer(1));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_calling_functions_with_bindings_two() {
+    let input = "
+let add = fn() { let one = 1; let two = 2; one + two };
+add();
+";
+    let expected = Rc::new(Object::Integer(3));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_calling_functions_with_bindings_three() {
+    let input = "
+let addOneTwo = fn() { let one = 1; let two = 2; one + two };
+let addThreeFour = fn() { let three = 3; let four = 4; three + four };
+addOneTwo() + addThreeFour();
+";
+    let expected = Rc::new(Object::Integer(10));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_calling_functions_with_bindings_four() {
+    let input = "
+let fooOne = fn() { let foo = 50; foo; };
+let fooTwo = fn() { let foo = 100; foo; };
+fooOne() + fooTwo();
+";
+    let expected = Rc::new(Object::Integer(150));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_calling_functions_with_bindings_five() {
+    let input = "
+let globalSeed = 50;
+let minusOne = fn() {
+    let num = 1;
+    globalSeed - num;
+};
+let minusTwo = fn() {
+    let num = 2;
+    globalSeed - num;
+};
+minusOne() + minusTwo();
+";
+    let expected = Rc::new(Object::Integer(97));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_first_class_function_with_locals() {
+    let input = "
+let returnsOneReturner = fn() {
+    let returnsOne = fn() { 1; };
+    returnsOne;
+};
+returnsOneReturner()();
+";
+    let expected = Rc::new(Object::Integer(1));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}

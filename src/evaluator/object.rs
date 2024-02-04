@@ -87,12 +87,14 @@ impl Display for Hashable {
 #[derive(Clone, Debug, PartialEq)]
 pub struct CompiledFunction {
     pub instructions: Rc<Instructions>,
+    pub num_locals: u32,
 }
 
 impl CompiledFunction {
-    pub fn new(instructions: Instructions) -> Self {
+    pub fn new(instructions: Instructions, num_locals: u32) -> Self {
         CompiledFunction {
             instructions: Rc::new(instructions),
+            num_locals,
         }
     }
 }

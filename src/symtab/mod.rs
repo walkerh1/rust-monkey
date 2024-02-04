@@ -29,7 +29,7 @@ impl Symbol {
 pub struct SymbolTable {
     pub outer: Option<Box<SymbolTable>>,
     store: HashMap<String, Rc<Symbol>>,
-    num_definitions: u32,
+    pub num_definitions: u32,
 }
 
 impl SymbolTable {

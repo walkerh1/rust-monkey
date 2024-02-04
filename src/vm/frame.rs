@@ -6,11 +6,16 @@ use crate::{code::Instructions, evaluator::object::CompiledFunction};
 pub struct Frame {
     pub function: CompiledFunction,
     pub ip: usize,
+    pub bp: usize,
 }
 
 impl Frame {
-    pub fn new(function: CompiledFunction) -> Self {
-        Frame { function, ip: 0 }
+    pub fn new(function: CompiledFunction, bp: usize) -> Self {
+        Frame {
+            function,
+            ip: 0,
+            bp,
+        }
     }
 
     pub fn instructions(&self) -> &Rc<Instructions> {

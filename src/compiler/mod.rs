@@ -127,9 +127,10 @@ impl Compiler {
                 if !self.last_instruction_is(OpCode::ReturnValue) {
                     self.emit(OpCode::Return, &[]);
                 }
+                let num_locals = self.symbol_table.num_definitions;
                 let instructions = self.leave_scope();
                 let compilted_fn =
-                    Object::CompiledFunc(Rc::new(CompiledFunction::new(instructions)));
+                    Object::CompiledFunc(Rc::new(CompiledFunction::new(instructions, num_locals)));
                 let address = self.add_constant(compilted_fn);
                 self.emit(OpCode::Constant, &[address]);
             }

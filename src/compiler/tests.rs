@@ -713,6 +713,7 @@ fn test_compile_function_one() {
                 .into_iter()
                 .flatten()
                 .collect::<Vec<u8>>(),
+                0,
             )))),
         ],
     );
@@ -742,6 +743,7 @@ fn test_compile_function_two() {
                 .into_iter()
                 .flatten()
                 .collect::<Vec<u8>>(),
+                0,
             )))),
         ],
     );
@@ -771,6 +773,7 @@ fn test_compile_function_three() {
                 .into_iter()
                 .flatten()
                 .collect::<Vec<u8>>(),
+                0,
             )))),
         ],
     );
@@ -788,7 +791,7 @@ fn test_compile_function_four() {
             .flatten()
             .collect::<Vec<u8>>(),
         vec![Rc::new(Object::CompiledFunc(Rc::new(
-            CompiledFunction::new(make(OpCode::Return, &[]).to_vec()),
+            CompiledFunction::new(make(OpCode::Return, &[]).to_vec(), 0),
         )))],
     );
     let (byte_code, error) = parse_and_compile(input);
@@ -818,6 +821,7 @@ fn test_compile_function_call_one() {
                 .into_iter()
                 .flatten()
                 .collect::<Vec<u8>>(),
+                0,
             )))),
         ],
     );
@@ -850,6 +854,7 @@ fn test_compile_function_call_two() {
                 .into_iter()
                 .flatten()
                 .collect::<Vec<u8>>(),
+                0,
             )))),
         ],
     );
@@ -884,6 +889,7 @@ fn() { num };
                 .into_iter()
                 .flatten()
                 .collect::<Vec<u8>>(),
+                0,
             )))),
         ],
     );
@@ -917,6 +923,7 @@ fn() {
                 .into_iter()
                 .flatten()
                 .collect::<Vec<u8>>(),
+                1,
             )))),
         ],
     );
@@ -956,6 +963,7 @@ fn() {
                 .into_iter()
                 .flatten()
                 .collect::<Vec<u8>>(),
+                2,
             )))),
         ],
     );

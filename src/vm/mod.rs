@@ -33,7 +33,7 @@ impl VirtualMachine {
             constants,
             stack: Vec::with_capacity(STACK_SIZE),
             globals: vec![Rc::new(Object::Null); GLOBAL_SIZE],
-            frames: vec![Frame::new(CompiledFunction::new(instructions))],
+            frames: vec![Frame::new(CompiledFunction::new(instructions, 0), 0)],
             frames_idx: 0,
         }
     }
@@ -127,7 +127,12 @@ impl VirtualMachine {
                 }
                 OpCode::Call => match &*self.stack[self.stack.len() - 1] {
                     Object::CompiledFunc(func) => {
-                        self.push_frame(Frame::new(func.deref().clone()))?;
+                        let num_locals = func.num_locals;
+                        let frame = Frame::new(func.deref().clone(), self.stack.len() - 1);
+                        self.push_frame(frame)?;
+                        for _ in 0..num_locals {
+                            self.push(&Rc::new(NULL))?;
+                        }
                         continue; // don't want to increment ip
                     }
                     _ => {
@@ -136,17 +141,34 @@ impl VirtualMachine {
                 },
                 OpCode::ReturnValue => {
                     let return_val = self.pop()?;
-                    self.pop_frame()?;
-                    self.pop()?;
+                    let frame = self.pop_frame()?;
+                    // pop local bindings off stack
+                    while self.stack.len() > frame.bp {
+                        self.pop()?;
+                    }
                     self.push(&return_val)?;
                 }
                 OpCode::Return => {
-                    self.pop_frame()?;
-                    self.pop()?;
+                    let frame = self.pop_frame()?;
+                    // pop local bindings off stack
+                    while self.stack.len() > frame.bp {
+                        self.pop()?;
+                    }
                     self.push(&Rc::new(NULL))?;
                 }
-                OpCode::SetLocal => todo!(),
-                OpCode::GetLocal => todo!(),
+                OpCode::SetLocal => {
+                    let local_idx = word[1] as usize;
+                    self.frames[self.frames_idx].ip += WORD_SIZE;
+                    self.stack[self.frames[self.frames_idx].bp + local_idx] = self.pop()?;
+                    continue;
+                }
+                OpCode::GetLocal => {
+                    let local_idx = word[1] as usize;
+                    self.frames[self.frames_idx].ip += WORD_SIZE;
+                    let obj = self.stack[self.frames[self.frames_idx].bp + local_idx].clone();
+                    self.push(&obj)?;
+                    continue;
+                }
             }
 
             self.frames[self.frames_idx].ip += WORD_SIZE;
@@ -248,6 +270,9 @@ impl VirtualMachine {
     fn execute_binary_expression(&mut self, op: OpCode) -> Result<(), VmError> {
         let right = self.pop()?;
         let left = self.pop()?;
+        println!("stack: {:?}", self.stack);
+        println!("left: {left}");
+        println!("right: {right}");
         match (&*left, &op, &*right) {
             (Object::Integer(left_val), _, Object::Integer(right_val)) => {
                 self.execute_integer_operation(*left_val, op, *right_val)?;
