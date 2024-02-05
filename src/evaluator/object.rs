@@ -88,13 +88,15 @@ impl Display for Hashable {
 pub struct CompiledFunction {
     pub instructions: Rc<Instructions>,
     pub num_locals: u32,
+    pub num_params: u32,
 }
 
 impl CompiledFunction {
-    pub fn new(instructions: Instructions, num_locals: u32) -> Self {
+    pub fn new(instructions: Instructions, num_locals: u32, num_params: u32) -> Self {
         CompiledFunction {
             instructions: Rc::new(instructions),
             num_locals,
+            num_params,
         }
     }
 }

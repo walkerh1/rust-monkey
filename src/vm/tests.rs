@@ -711,3 +711,121 @@ returnsOneReturner()();
     assert_eq!(error, None);
     assert_eq!(result, Some(expected));
 }
+
+#[test]
+fn test_calling_functions_with_args_and_no_bindings_one() {
+    let input = "
+let id = fn(a) { a };
+id(1);
+";
+    let expected = Rc::new(Object::Integer(1));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_calling_functions_with_args_and_no_bindings_two() {
+    let input = "
+let sum = fn(a, b) { a + b; };
+sum(1, 2);
+";
+    let expected = Rc::new(Object::Integer(3));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_calling_functions_with_args_and_bindings_one() {
+    let input = "
+let sum = fn(a, b) {
+    let c = a + b;
+    c;
+};
+sum(1, 2);
+";
+    let expected = Rc::new(Object::Integer(3));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_calling_functions_with_args_and_bindings_two() {
+    let input = "
+let sum = fn(a, b) {
+    let c = a + b;
+    c;
+};
+sum(1, 2) + sum(3, 4);
+";
+    let expected = Rc::new(Object::Integer(10));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_calling_functions_with_args_and_bindings_three() {
+    let input = "
+let sum = fn(a, b) {
+    let c = a + b;
+    c;
+};
+let outer = fn() {
+    sum(1, 2) + sum(3, 4);
+};
+outer();
+";
+    let expected = Rc::new(Object::Integer(10));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_calling_functions_with_args_and_bindings_four() {
+    let input = "
+let globalNum = 10;
+let sum = fn(a, b) {
+    let c = a + b;
+    c + globalNum;
+};
+let outer = fn() {
+    sum(1, 2) + sum(3, 4) + globalNum;
+};
+outer() + globalNum;
+";
+    let expected = Rc::new(Object::Integer(50));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_calling_function_with_wrong_args_one() {
+    let input = "fn() { 1; }(1);";
+    let expected_error = VmError::WrongArguments;
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, Some(expected_error));
+    assert_eq!(result, None);
+}
+
+#[test]
+fn test_calling_function_with_wrong_args_two() {
+    let input = "fn(a) { 1; }();";
+    let expected_error = VmError::WrongArguments;
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, Some(expected_error));
+    assert_eq!(result, None);
+}
+
+#[test]
+fn test_calling_function_with_wrong_args_three() {
+    let input = "fn(a, b) { 1; }(1);";
+    let expected_error = VmError::WrongArguments;
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, Some(expected_error));
+    assert_eq!(result, None);
+}

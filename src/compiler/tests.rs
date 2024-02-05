@@ -714,6 +714,7 @@ fn test_compile_function_one() {
                 .flatten()
                 .collect::<Vec<u8>>(),
                 0,
+                0,
             )))),
         ],
     );
@@ -743,6 +744,7 @@ fn test_compile_function_two() {
                 .into_iter()
                 .flatten()
                 .collect::<Vec<u8>>(),
+                0,
                 0,
             )))),
         ],
@@ -774,6 +776,7 @@ fn test_compile_function_three() {
                 .flatten()
                 .collect::<Vec<u8>>(),
                 0,
+                0,
             )))),
         ],
     );
@@ -791,7 +794,7 @@ fn test_compile_function_four() {
             .flatten()
             .collect::<Vec<u8>>(),
         vec![Rc::new(Object::CompiledFunc(Rc::new(
-            CompiledFunction::new(make(OpCode::Return, &[]).to_vec(), 0),
+            CompiledFunction::new(make(OpCode::Return, &[]).to_vec(), 0, 0),
         )))],
     );
     let (byte_code, error) = parse_and_compile(input);
@@ -821,6 +824,7 @@ fn test_compile_function_call_one() {
                 .into_iter()
                 .flatten()
                 .collect::<Vec<u8>>(),
+                0,
                 0,
             )))),
         ],
@@ -854,6 +858,7 @@ fn test_compile_function_call_two() {
                 .into_iter()
                 .flatten()
                 .collect::<Vec<u8>>(),
+                0,
                 0,
             )))),
         ],
@@ -890,6 +895,7 @@ fn() { num };
                 .flatten()
                 .collect::<Vec<u8>>(),
                 0,
+                0,
             )))),
         ],
     );
@@ -924,6 +930,7 @@ fn() {
                 .flatten()
                 .collect::<Vec<u8>>(),
                 1,
+                0,
             )))),
         ],
     );
@@ -964,6 +971,7 @@ fn() {
                 .flatten()
                 .collect::<Vec<u8>>(),
                 2,
+                0,
             )))),
         ],
     );
@@ -996,6 +1004,7 @@ arg(24);
                     .into_iter()
                     .flatten()
                     .collect::<Vec<u8>>(),
+                1,
                 1,
             )))),
             Rc::new(Object::Integer(24)),
@@ -1032,6 +1041,7 @@ arg(1, 2, 3);
                     .into_iter()
                     .flatten()
                     .collect::<Vec<u8>>(),
+                3,
                 3,
             )))),
             Rc::new(Object::Integer(1)),
@@ -1071,6 +1081,7 @@ arg(24);
                 .into_iter()
                 .flatten()
                 .collect::<Vec<u8>>(),
+                1,
                 1,
             )))),
             Rc::new(Object::Integer(24)),
@@ -1113,6 +1124,7 @@ arg(1, 2, 3);
                 .into_iter()
                 .flatten()
                 .collect::<Vec<u8>>(),
+                3,
                 3,
             )))),
             Rc::new(Object::Integer(1)),

@@ -2,6 +2,7 @@ use self::frame::Frame;
 use crate::code::{read_u16, OpCode, WORD_SIZE};
 use crate::compiler::ByteCode;
 use crate::evaluator::object::{CompiledFunction, Hashable, Object};
+use core::num;
 use std::collections::HashMap;
 use std::ops::Deref;
 use std::rc::Rc;
@@ -33,7 +34,7 @@ impl VirtualMachine {
             constants,
             stack: Vec::with_capacity(STACK_SIZE),
             globals: vec![Rc::new(Object::Null); GLOBAL_SIZE],
-            frames: vec![Frame::new(CompiledFunction::new(instructions, 0), 0)],
+            frames: vec![Frame::new(CompiledFunction::new(instructions, 0, 0), 0)],
             frames_idx: 0,
         }
     }
@@ -125,25 +126,32 @@ impl VirtualMachine {
                 OpCode::Index => {
                     self.execute_index_expression()?;
                 }
-                OpCode::Call => match &*self.stack[self.stack.len() - 1] {
-                    Object::CompiledFunc(func) => {
-                        let num_locals = func.num_locals;
-                        let frame = Frame::new(func.deref().clone(), self.stack.len() - 1);
-                        self.push_frame(frame)?;
-                        for _ in 0..num_locals {
-                            self.push(&Rc::new(NULL))?;
+                OpCode::Call => {
+                    let num_args = word[1] as usize;
+                    match &*self.stack[self.stack.len() - 1 - num_args] {
+                        Object::CompiledFunc(func) => {
+                            let num_locals = func.num_locals;
+                            if func.num_params != num_args as u32 {
+                                return Err(VmError::WrongArguments);
+                            }
+                            let frame =
+                                Frame::new(func.deref().clone(), self.stack.len() - num_args);
+                            self.push_frame(frame)?;
+                            for _ in 0..(num_locals - (num_args as u32)) {
+                                self.push(&Rc::new(NULL))?;
+                            }
+                            continue; // don't want to increment ip
                         }
-                        continue; // don't want to increment ip
+                        _ => {
+                            return Err(VmError::CallingNonFunction);
+                        }
                     }
-                    _ => {
-                        return Err(VmError::CallingNonFunction);
-                    }
-                },
+                }
                 OpCode::ReturnValue => {
                     let return_val = self.pop()?;
                     let frame = self.pop_frame()?;
                     // pop local bindings off stack
-                    while self.stack.len() > frame.bp {
+                    while self.stack.len() >= frame.bp {
                         self.pop()?;
                     }
                     self.push(&return_val)?;
@@ -151,7 +159,7 @@ impl VirtualMachine {
                 OpCode::Return => {
                     let frame = self.pop_frame()?;
                     // pop local bindings off stack
-                    while self.stack.len() > frame.bp {
+                    while self.stack.len() >= frame.bp {
                         self.pop()?;
                     }
                     self.push(&Rc::new(NULL))?;
@@ -388,4 +396,5 @@ pub enum VmError {
     FrameStackUnderflow,
     FrameStackOverflow,
     CallingNonFunction,
+    WrongArguments,
 }
