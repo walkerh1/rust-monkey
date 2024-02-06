@@ -829,3 +829,168 @@ fn test_calling_function_with_wrong_args_three() {
     assert_eq!(error, Some(expected_error));
     assert_eq!(result, None);
 }
+
+#[test]
+fn test_builtin_one() {
+    let input = "len(\"\");";
+    let expected = Rc::new(Object::Integer(0));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_builtin_two() {
+    let input = "len(\"four\");";
+    let expected = Rc::new(Object::Integer(4));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_builtin_three() {
+    let input = "len(\"hello world\");";
+    let expected = Rc::new(Object::Integer(11));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_builtin_four() {
+    let input = "len(1);";
+    let expected_error = VmError::IncompatibleTypes;
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, Some(expected_error));
+    assert_eq!(result, None);
+}
+
+#[test]
+fn test_builtin_five() {
+    let input = "len(\"one\", \"two\");";
+    let expected_error = VmError::WrongArguments;
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, Some(expected_error));
+    assert_eq!(result, None);
+}
+
+#[test]
+fn test_builtin_six() {
+    let input = "len([1,2,3]);";
+    let expected = Rc::new(Object::Integer(3));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_builtin_seven() {
+    let input = "len([]);";
+    let expected = Rc::new(Object::Integer(0));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_builtin_eight() {
+    let input = "puts(\"hello\", \"world\");";
+    let expected = Rc::new(Object::Null);
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_builtin_nine() {
+    let input = "first([1,2,3]);";
+    let expected = Rc::new(Object::Integer(1));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_builtin_ten() {
+    let input = "first([]);";
+    let expected = Rc::new(Object::Null);
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_builtin_eleven() {
+    let input = "first(1);";
+    let expected_error = VmError::IncompatibleTypes;
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, Some(expected_error));
+    assert_eq!(result, None);
+}
+
+#[test]
+fn test_builtin_twelve() {
+    let input = "last([1,2,3]);";
+    let expected = Rc::new(Object::Integer(3));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_builtin_thirteen() {
+    let input = "last([]);";
+    let expected = Rc::new(Object::Null);
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_builtin_fourteen() {
+    let input = "last(1);";
+    let expected_error = VmError::IncompatibleTypes;
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, Some(expected_error));
+    assert_eq!(result, None);
+}
+
+#[test]
+fn test_builtin_fifteen() {
+    let input = "rest([1,2,3]);";
+    let expected = Rc::new(Object::Array(vec![
+        Rc::new(Object::Integer(2)),
+        Rc::new(Object::Integer(3)),
+    ]));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_builtin_sixteen() {
+    let input = "rest([]);";
+    let expected = Rc::new(Object::Null);
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_builtin_seventeen() {
+    let input = "push([], 1);";
+    let expected = Rc::new(Object::Array(vec![Rc::new(Object::Integer(1))]));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_builtin_eighteen() {
+    let input = "push(1,1);";
+    let expected_error = VmError::IncompatibleTypes;
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, Some(expected_error));
+    assert_eq!(result, None);
+}

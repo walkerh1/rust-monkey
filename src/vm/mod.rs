@@ -1,6 +1,7 @@
 use self::frame::Frame;
 use crate::code::{read_u16, OpCode, WORD_SIZE};
 use crate::compiler::ByteCode;
+use crate::object::builtins::{Builtin, BuiltinError};
 use crate::object::{CompiledFunction, Hashable, Object};
 use std::collections::HashMap;
 use std::ops::Deref;
@@ -141,6 +142,17 @@ impl VirtualMachine {
                             }
                             continue; // don't want to increment ip
                         }
+                        Object::Builtin(builtin) => {
+                            let args = &self.stack[self.stack.len() - num_args..];
+                            let result = builtin.apply(args).map_err(|e| match e {
+                                BuiltinError::IncompatibleTypes => VmError::IncompatibleTypes,
+                                BuiltinError::IncorrectNumberOfArgs => VmError::WrongArguments,
+                            })?;
+                            for _ in 0..num_args {
+                                self.pop()?;
+                            }
+                            self.push(&result)?;
+                        }
                         _ => {
                             return Err(VmError::CallingNonFunction);
                         }
@@ -176,7 +188,12 @@ impl VirtualMachine {
                     self.push(&obj)?;
                     continue;
                 }
-                OpCode::GetBuiltin => todo!(),
+                OpCode::GetBuiltin => {
+                    let builtin_idx = word[1] as usize;
+                    if let Some(builtin) = Builtin::get_by_idx(builtin_idx) {
+                        self.push(&Rc::clone(&builtin))?;
+                    }
+                }
             }
 
             self.frames[self.frames_idx].ip += WORD_SIZE;

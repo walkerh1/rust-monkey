@@ -26,6 +26,18 @@ impl Builtin {
         })
     }
 
+    pub fn get_by_idx(id: usize) -> Option<Rc<Object>> {
+        Some(match id {
+            0 => Rc::new(Object::Builtin(Builtin::Len)),
+            1 => Rc::new(Object::Builtin(Builtin::First)),
+            2 => Rc::new(Object::Builtin(Builtin::Last)),
+            3 => Rc::new(Object::Builtin(Builtin::Rest)),
+            4 => Rc::new(Object::Builtin(Builtin::Push)),
+            5 => Rc::new(Object::Builtin(Builtin::Puts)),
+            _ => return None,
+        })
+    }
+
     pub fn apply(&self, args: &[Rc<Object>]) -> Result<Rc<Object>, BuiltinError> {
         Ok(match self {
             Builtin::Len => {

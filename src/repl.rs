@@ -15,6 +15,7 @@ impl Repl {
         let mut writer = io::stdout();
 
         let mut symtab = SymbolTable::new();
+        symtab.define_all_builtins();
         let mut constants = vec![];
         let mut globals = vec![Rc::new(Object::Null); GLOBAL_SIZE];
 
