@@ -6,6 +6,7 @@ mod tests;
 pub enum SymbolScope {
     Global,
     Local,
+    Builtin,
 }
 
 #[derive(Debug, PartialEq)]
@@ -45,6 +46,21 @@ impl SymbolTable {
         let mut new = Self::new();
         new.outer = Some(Box::new(table));
         new
+    }
+
+    pub fn define_builtin(&mut self, idx: u32, name: String) -> Rc<Symbol> {
+        let symbol = Rc::new(Symbol::new(name.as_str(), SymbolScope::Builtin, idx));
+        self.store.insert(name, Rc::clone(&symbol));
+        symbol
+    }
+
+    pub fn define_all_builtins(&mut self) {
+        self.define_builtin(0, "len".to_string());
+        self.define_builtin(1, "first".to_string());
+        self.define_builtin(2, "last".to_string());
+        self.define_builtin(3, "rest".to_string());
+        self.define_builtin(4, "push".to_string());
+        self.define_builtin(5, "puts".to_string());
     }
 
     pub fn define(&mut self, name: String) -> Rc<Symbol> {

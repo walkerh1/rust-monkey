@@ -104,3 +104,31 @@ fn test_resolve_nested_local() {
     let f = second_local.resolve("f".to_string()).unwrap();
     assert_eq!(f, Rc::new(Symbol::new("f", SymbolScope::Local, 1)));
 }
+
+#[test]
+fn test_define_resolve_builtin() {
+    let mut global = SymbolTable::new();
+    global.define_builtin(0, "a".to_string());
+    global.define_builtin(1, "b".to_string());
+
+    let mut first_local = SymbolTable::new_enclosed(global.clone());
+    let mut second_local = SymbolTable::new_enclosed(first_local.clone());
+
+    let ag = global.resolve("a".to_string()).unwrap();
+    assert_eq!(ag, Rc::new(Symbol::new("a", SymbolScope::Builtin, 0)));
+
+    let al1 = first_local.resolve("a".to_string()).unwrap();
+    assert_eq!(al1, Rc::new(Symbol::new("a", SymbolScope::Builtin, 0)));
+
+    let al2 = second_local.resolve("a".to_string()).unwrap();
+    assert_eq!(al2, Rc::new(Symbol::new("a", SymbolScope::Builtin, 0)));
+
+    let bg = global.resolve("b".to_string()).unwrap();
+    assert_eq!(bg, Rc::new(Symbol::new("b", SymbolScope::Builtin, 1)));
+
+    let bl1 = first_local.resolve("b".to_string()).unwrap();
+    assert_eq!(bl1, Rc::new(Symbol::new("b", SymbolScope::Builtin, 1)));
+
+    let bl2 = second_local.resolve("b".to_string()).unwrap();
+    assert_eq!(bl2, Rc::new(Symbol::new("b", SymbolScope::Builtin, 1)));
+}

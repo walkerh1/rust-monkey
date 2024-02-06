@@ -1091,6 +1091,7 @@ arg(24);
     assert_eq!(error, None);
     assert_eq!(byte_code, Some(expected));
 }
+
 #[test]
 fn test_arguments_in_function_calls_four() {
     let input = "
@@ -1131,6 +1132,65 @@ arg(1, 2, 3);
             Rc::new(Object::Integer(2)),
             Rc::new(Object::Integer(3)),
         ],
+    );
+    let (byte_code, error) = parse_and_compile(input);
+    assert_eq!(error, None);
+    assert_eq!(byte_code, Some(expected));
+}
+
+#[test]
+fn test_builtin_one() {
+    let input = "
+len([]);
+push([], 1);
+";
+    let expected = ByteCode(
+        vec![
+            make(OpCode::GetBuiltin, &[0_u32]),
+            make(OpCode::Array, &[0_u32]),
+            make(OpCode::Call, &[1_u32]),
+            make(OpCode::Pop, &[]),
+            make(OpCode::GetBuiltin, &[4_u32]),
+            make(OpCode::Array, &[0_u32]),
+            make(OpCode::Constant, &[0_u32]),
+            make(OpCode::Call, &[2_u32]),
+            make(OpCode::Pop, &[]),
+        ]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<u8>>(),
+        vec![Rc::new(Object::Integer(1))],
+    );
+    let (byte_code, error) = parse_and_compile(input);
+    assert_eq!(error, None);
+    assert_eq!(byte_code, Some(expected));
+}
+
+#[test]
+fn test_builtin_two() {
+    let input = "
+fn() { len([]) };
+";
+    let expected = ByteCode(
+        vec![make(OpCode::Constant, &[0_u32]), make(OpCode::Pop, &[])]
+            .into_iter()
+            .flatten()
+            .collect::<Vec<u8>>(),
+        vec![Rc::new(Object::CompiledFunc(Rc::new(
+            CompiledFunction::new(
+                vec![
+                    make(OpCode::GetBuiltin, &[0_u32]),
+                    make(OpCode::Array, &[0_u32]),
+                    make(OpCode::Call, &[1_u32]),
+                    make(OpCode::ReturnValue, &[]),
+                ]
+                .into_iter()
+                .flatten()
+                .collect::<Vec<u8>>(),
+                0,
+                0,
+            ),
+        )))],
     );
     let (byte_code, error) = parse_and_compile(input);
     assert_eq!(error, None);

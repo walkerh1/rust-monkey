@@ -1,6 +1,8 @@
 use crate::object::Object;
 use std::rc::Rc;
 
+pub const NUM_BUILTINS: usize = 6;
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Builtin {
     Len,

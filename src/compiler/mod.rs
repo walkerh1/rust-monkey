@@ -1,4 +1,5 @@
 use crate::code::{make, Instructions, OpCode, WORD_SIZE};
+use crate::object::builtins::NUM_BUILTINS;
 use crate::object::{CompiledFunction, Object};
 use crate::parser::ast::{Expression, Infix, Prefix, Program, Statement};
 use crate::symtab::{SymbolScope, SymbolTable};
@@ -19,9 +20,11 @@ pub struct Compiler {
 
 impl Compiler {
     pub fn new() -> Self {
+        let mut symbol_table = SymbolTable::new();
+        symbol_table.define_all_builtins();
         Compiler {
             constants: vec![],
-            symbol_table: SymbolTable::new(),
+            symbol_table,
             scopes: vec![Instructions::new()],
             scope_idx: 0,
         }
@@ -74,6 +77,7 @@ impl Compiler {
             match symbol.scope {
                 SymbolScope::Global => self.emit(OpCode::SetGlobal, &[symbol.index]),
                 SymbolScope::Local => self.emit(OpCode::SetLocal, &[symbol.index]),
+                SymbolScope::Builtin => todo!(),
             };
         }
         Ok(())
@@ -95,6 +99,9 @@ impl Compiler {
                     }
                     SymbolScope::Local => {
                         self.emit(OpCode::GetLocal, &[binding.index]);
+                    }
+                    SymbolScope::Builtin => {
+                        self.emit(OpCode::GetBuiltin, &[binding.index]);
                     }
                 },
                 None => {
