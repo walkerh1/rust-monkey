@@ -1,11 +1,14 @@
 use crate::code::Instructions;
-use crate::evaluator::builtin::Builtin;
 use crate::evaluator::environment::Environment;
 use crate::parser::ast::Statement;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 use std::rc::Rc;
+
+use self::builtins::Builtin;
+
+pub mod builtins;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Object {

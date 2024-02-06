@@ -1,4 +1,3 @@
-use crate::evaluator::EvalError;
 use crate::object::Object;
 use std::rc::Rc;
 
@@ -25,25 +24,25 @@ impl Builtin {
         })
     }
 
-    pub fn apply(&self, args: &[Rc<Object>]) -> Result<Rc<Object>, EvalError> {
+    pub fn apply(&self, args: &[Rc<Object>]) -> Result<Rc<Object>, BuiltinError> {
         Ok(match self {
             Builtin::Len => {
                 if args.len() != 1 {
-                    return Err(EvalError::IncorrectNumberOfArgs);
+                    return Err(BuiltinError::IncorrectNumberOfArgs);
                 }
 
                 // safe to unwrap as the length of args is 1
                 let result = match &**args.first().unwrap() {
                     Object::String(string) => string.len() as i64,
                     Object::Array(array) => array.len() as i64,
-                    _ => return Err(EvalError::IncompatibleTypes),
+                    _ => return Err(BuiltinError::IncompatibleTypes),
                 };
 
                 Rc::new(Object::Integer(result))
             }
             Builtin::First => {
                 if args.len() != 1 {
-                    return Err(EvalError::IncorrectNumberOfArgs);
+                    return Err(BuiltinError::IncorrectNumberOfArgs);
                 }
 
                 if let Object::Array(array) = &**args.first().unwrap() {
@@ -52,12 +51,12 @@ impl Builtin {
                         None => Rc::new(Object::Null),
                     }
                 } else {
-                    return Err(EvalError::IncompatibleTypes);
+                    return Err(BuiltinError::IncompatibleTypes);
                 }
             }
             Builtin::Last => {
                 if args.len() != 1 {
-                    return Err(EvalError::IncorrectNumberOfArgs);
+                    return Err(BuiltinError::IncorrectNumberOfArgs);
                 }
 
                 if let Object::Array(array) = &**args.first().unwrap() {
@@ -66,12 +65,12 @@ impl Builtin {
                         None => Rc::new(Object::Null),
                     }
                 } else {
-                    return Err(EvalError::IncompatibleTypes);
+                    return Err(BuiltinError::IncompatibleTypes);
                 }
             }
             Builtin::Rest => {
                 if args.len() != 1 {
-                    return Err(EvalError::IncorrectNumberOfArgs);
+                    return Err(BuiltinError::IncorrectNumberOfArgs);
                 }
 
                 if let Object::Array(array) = &**args.first().unwrap() {
@@ -81,12 +80,12 @@ impl Builtin {
                         Rc::new(Object::Array(array[1..].to_vec()))
                     }
                 } else {
-                    return Err(EvalError::IncompatibleTypes);
+                    return Err(BuiltinError::IncompatibleTypes);
                 }
             }
             Builtin::Push => {
                 if args.len() != 2 {
-                    return Err(EvalError::IncorrectNumberOfArgs);
+                    return Err(BuiltinError::IncorrectNumberOfArgs);
                 }
 
                 if let Object::Array(array) = &**args.first().unwrap() {
@@ -98,7 +97,7 @@ impl Builtin {
                     new_array.push(element);
                     Rc::new(Object::Array(new_array))
                 } else {
-                    return Err(EvalError::IncompatibleTypes);
+                    return Err(BuiltinError::IncompatibleTypes);
                 }
             }
             Builtin::Puts => {
@@ -109,4 +108,9 @@ impl Builtin {
             }
         })
     }
+}
+
+pub enum BuiltinError {
+    IncompatibleTypes,
+    IncorrectNumberOfArgs,
 }

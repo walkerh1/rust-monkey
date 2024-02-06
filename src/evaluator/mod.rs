@@ -1,12 +1,11 @@
-use crate::evaluator::builtin::Builtin;
 use crate::evaluator::environment::Environment;
+use crate::object::builtins::{Builtin, BuiltinError};
 use crate::object::{Function, Hashable, Object};
 use crate::parser::ast::{Expression, Infix, Prefix, Program, Statement};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-pub mod builtin;
 pub mod environment;
 mod tests;
 
@@ -255,7 +254,10 @@ fn apply_function(func: Rc<Object>, args: &[Rc<Object>]) -> Result<Rc<Object>, E
 
             Ok(result)
         }
-        Object::Builtin(builtin) => builtin.apply(args),
+        Object::Builtin(builtin) => builtin.apply(args).map_err(|e| match e {
+            BuiltinError::IncompatibleTypes => EvalError::IncompatibleTypes,
+            BuiltinError::IncorrectNumberOfArgs => EvalError::IncorrectNumberOfArgs,
+        }),
         _ => Err(EvalError::NotAFunction),
     }
 }
