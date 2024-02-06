@@ -1,5 +1,5 @@
 use crate::code::{make, Instructions, OpCode, WORD_SIZE};
-use crate::evaluator::object::{CompiledFunction, Object};
+use crate::object::{CompiledFunction, Object};
 use crate::parser::ast::{Expression, Infix, Prefix, Program, Statement};
 use crate::symtab::{SymbolScope, SymbolTable};
 use std::rc::Rc;

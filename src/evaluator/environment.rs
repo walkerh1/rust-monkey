@@ -1,4 +1,4 @@
-use crate::evaluator::object::Object;
+use crate::object::Object;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -9,6 +9,7 @@ pub struct Environment {
     outer: Option<Rc<RefCell<Environment>>>,
 }
 
+#[allow(unused)]
 impl Environment {
     pub fn new() -> Environment {
         Environment {

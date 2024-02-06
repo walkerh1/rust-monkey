@@ -1,14 +1,13 @@
 use crate::evaluator::builtin::Builtin;
 use crate::evaluator::environment::Environment;
-use crate::evaluator::object::{Function, Hashable, Object};
+use crate::object::{Function, Hashable, Object};
 use crate::parser::ast::{Expression, Infix, Prefix, Program, Statement};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-mod builtin;
+pub mod builtin;
 pub mod environment;
-pub mod object;
 mod tests;
 
 #[allow(dead_code)]

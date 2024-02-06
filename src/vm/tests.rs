@@ -1,5 +1,5 @@
 use crate::compiler::Compiler;
-use crate::evaluator::object::{Hashable, Object};
+use crate::object::{Hashable, Object};
 use crate::parser::Parser;
 use crate::vm::{VirtualMachine, VmError, STACK_SIZE};
 use std::collections::HashMap;

@@ -1,5 +1,5 @@
-use crate::evaluator::object::Object;
 use crate::evaluator::EvalError;
+use crate::object::Object;
 use std::rc::Rc;
 
 #[derive(Clone, Debug, Eq, PartialEq)]

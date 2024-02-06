@@ -1,8 +1,8 @@
 #![cfg(test)]
 
 use crate::evaluator::environment::Environment;
-use crate::evaluator::object::{Function, Hashable, Object};
 use crate::evaluator::{eval, EvalError};
+use crate::object::{Function, Hashable, Object};
 use crate::parser::ast::{Expression, Infix, Statement};
 use crate::parser::Parser;
 use std::cell::RefCell;

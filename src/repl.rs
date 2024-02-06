@@ -1,7 +1,7 @@
 use crate::parser::Parser;
 use crate::symtab::SymbolTable;
 use crate::vm::{VirtualMachine, GLOBAL_SIZE};
-use crate::{compiler::Compiler, evaluator::object::Object};
+use crate::{compiler::Compiler, object::Object};
 use std::io::{self, Write};
 use std::rc::Rc;
 

@@ -6,6 +6,7 @@ mod code;
 mod compiler;
 mod evaluator;
 pub mod lexer;
+mod object;
 mod parser;
 pub mod repl;
 mod symtab;

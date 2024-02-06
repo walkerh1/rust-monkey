@@ -2,7 +2,7 @@
 
 use crate::code::{make, OpCode};
 use crate::compiler::{ByteCode, Compiler, CompilerError};
-use crate::evaluator::object::{CompiledFunction, Object};
+use crate::object::{CompiledFunction, Object};
 use crate::parser::Parser;
 use std::rc::Rc;
 

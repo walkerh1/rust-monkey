@@ -1,8 +1,7 @@
 use self::frame::Frame;
 use crate::code::{read_u16, OpCode, WORD_SIZE};
 use crate::compiler::ByteCode;
-use crate::evaluator::object::{CompiledFunction, Hashable, Object};
-use core::num;
+use crate::object::{CompiledFunction, Hashable, Object};
 use std::collections::HashMap;
 use std::ops::Deref;
 use std::rc::Rc;

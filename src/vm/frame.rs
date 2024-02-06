@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use crate::{code::Instructions, evaluator::object::CompiledFunction};
+use crate::{code::Instructions, object::CompiledFunction};
 
 #[derive(Debug, PartialEq)]
 pub struct Frame {
