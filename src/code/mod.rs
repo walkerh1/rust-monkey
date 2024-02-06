@@ -34,6 +34,7 @@ pub enum OpCode {
     Return,
     SetLocal,
     GetLocal,
+    GetBuiltin,
 }
 
 impl Display for OpCode {
@@ -68,6 +69,7 @@ impl Display for OpCode {
                 OpCode::Return => "OpReturn",
                 OpCode::SetLocal => "OpSetLocal",
                 OpCode::GetLocal => "OpGetLocal",
+                OpCode::GetBuiltin => "OpGetBuiltin",
             }
         )
     }
@@ -104,6 +106,7 @@ impl TryFrom<u8> for OpCode {
             0x17 => Ok(OpCode::Return),
             0x18 => Ok(OpCode::SetLocal),
             0x19 => Ok(OpCode::GetLocal),
+            0x1a => Ok(OpCode::GetBuiltin),
             _ => Err("Invalid OpCode"),
         }
     }
@@ -138,6 +141,7 @@ impl From<OpCode> for u8 {
             OpCode::Return => 0x17,
             OpCode::SetLocal => 0x18,
             OpCode::GetLocal => 0x19,
+            OpCode::GetBuiltin => 0x1a,
         }
     }
 }
@@ -145,7 +149,7 @@ impl From<OpCode> for u8 {
 pub fn make(op: OpCode, operands: &[u32]) -> [u8; 4] {
     let mut instruction = [0x00; 4];
     match op {
-        OpCode::SetLocal | OpCode::GetLocal | OpCode::Call => {
+        OpCode::SetLocal | OpCode::GetLocal | OpCode::Call | OpCode::GetBuiltin => {
             instruction[0] = u8::from(op);
             instruction[1] = operands[0] as u8;
         }
@@ -190,7 +194,7 @@ pub fn disassemble(instructions: &Instructions) -> String {
     instructions.chunks_exact(WORD_SIZE).for_each(|word| {
         let op: OpCode = OpCode::try_from(word[0]).expect("Invalid OpCode");
         match op {
-            OpCode::SetLocal | OpCode::GetLocal | OpCode::Call => {
+            OpCode::SetLocal | OpCode::GetLocal | OpCode::Call | OpCode::GetBuiltin => {
                 assembly.push_str(&format!("{:04x} {} {}\n", address, op, &word[1]))
             }
             OpCode::Constant

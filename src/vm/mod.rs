@@ -176,6 +176,7 @@ impl VirtualMachine {
                     self.push(&obj)?;
                     continue;
                 }
+                OpCode::GetBuiltin => todo!(),
             }
 
             self.frames[self.frames_idx].ip += WORD_SIZE;
