@@ -194,6 +194,7 @@ impl VirtualMachine {
                         self.push(&Rc::clone(&builtin))?;
                     }
                 }
+                OpCode::Closure => todo!(),
             }
 
             self.frames[self.frames_idx].ip += WORD_SIZE;

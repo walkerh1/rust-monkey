@@ -35,6 +35,7 @@ pub enum OpCode {
     SetLocal,
     GetLocal,
     GetBuiltin,
+    Closure,
 }
 
 impl Display for OpCode {
@@ -70,6 +71,7 @@ impl Display for OpCode {
                 OpCode::SetLocal => "OpSetLocal",
                 OpCode::GetLocal => "OpGetLocal",
                 OpCode::GetBuiltin => "OpGetBuiltin",
+                OpCode::Closure => "OpClosure",
             }
         )
     }
@@ -107,6 +109,7 @@ impl TryFrom<u8> for OpCode {
             0x18 => Ok(OpCode::SetLocal),
             0x19 => Ok(OpCode::GetLocal),
             0x1a => Ok(OpCode::GetBuiltin),
+            0x1b => Ok(OpCode::Closure),
             _ => Err("Invalid OpCode"),
         }
     }
@@ -142,6 +145,7 @@ impl From<OpCode> for u8 {
             OpCode::SetLocal => 0x18,
             OpCode::GetLocal => 0x19,
             OpCode::GetBuiltin => 0x1a,
+            OpCode::Closure => 0x1b,
         }
     }
 }
@@ -149,6 +153,13 @@ impl From<OpCode> for u8 {
 pub fn make(op: OpCode, operands: &[u32]) -> [u8; 4] {
     let mut instruction = [0x00; 4];
     match op {
+        OpCode::Closure => {
+            instruction[0] = u8::from(op);
+            let operand = (operands[0] as u16).to_be_bytes();
+            instruction[1] = operand[0];
+            instruction[2] = operand[1];
+            instruction[3] = operands[1] as u8;
+        }
         OpCode::SetLocal | OpCode::GetLocal | OpCode::Call | OpCode::GetBuiltin => {
             instruction[0] = u8::from(op);
             instruction[1] = operands[0] as u8;
@@ -194,6 +205,13 @@ pub fn disassemble(instructions: &Instructions) -> String {
     instructions.chunks_exact(WORD_SIZE).for_each(|word| {
         let op: OpCode = OpCode::try_from(word[0]).expect("Invalid OpCode");
         match op {
+            OpCode::Closure => {
+                let operand = read_u16(&word[1..=2]);
+                assembly.push_str(&format!(
+                    "{:04x} {} {} {}\n",
+                    address, op, operand, &word[3]
+                ));
+            }
             OpCode::SetLocal | OpCode::GetLocal | OpCode::Call | OpCode::GetBuiltin => {
                 assembly.push_str(&format!("{:04x} {} {}\n", address, op, &word[1]))
             }

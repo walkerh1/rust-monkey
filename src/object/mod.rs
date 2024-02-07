@@ -22,6 +22,7 @@ pub enum Object {
     Array(Vec<Rc<Object>>),
     Hash(HashMap<Hashable, Rc<Object>>),
     CompiledFunc(Rc<CompiledFunction>),
+    Closure(Rc<Closure>),
 }
 
 impl Display for Object {
@@ -54,6 +55,7 @@ impl Display for Object {
                         .join(", ")
                 ),
                 Object::CompiledFunc(_) => "".to_string(),
+                Object::Closure(_) => "".to_string(),
             }
         )
     }
@@ -102,4 +104,10 @@ impl CompiledFunction {
             num_params,
         }
     }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Closure {
+    function: CompiledFunction,
+    free: Vec<Object>,
 }
