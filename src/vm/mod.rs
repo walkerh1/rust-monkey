@@ -202,6 +202,7 @@ impl VirtualMachine {
                     let const_idx = read_u16(&word[1..=2]) as usize;
                     self.push_closure(const_idx)?;
                 }
+                OpCode::GetFree => todo!(),
             }
 
             self.frames[self.frames_idx].ip += WORD_SIZE;

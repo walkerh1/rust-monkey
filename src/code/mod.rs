@@ -36,6 +36,7 @@ pub enum OpCode {
     GetLocal,
     GetBuiltin,
     Closure,
+    GetFree,
 }
 
 impl Display for OpCode {
@@ -72,6 +73,7 @@ impl Display for OpCode {
                 OpCode::GetLocal => "OpGetLocal",
                 OpCode::GetBuiltin => "OpGetBuiltin",
                 OpCode::Closure => "OpClosure",
+                OpCode::GetFree => "OpGetFree",
             }
         )
     }
@@ -110,6 +112,7 @@ impl TryFrom<u8> for OpCode {
             0x19 => Ok(OpCode::GetLocal),
             0x1a => Ok(OpCode::GetBuiltin),
             0x1b => Ok(OpCode::Closure),
+            0x1c => Ok(OpCode::GetFree),
             _ => Err("Invalid OpCode"),
         }
     }
@@ -146,6 +149,7 @@ impl From<OpCode> for u8 {
             OpCode::GetLocal => 0x19,
             OpCode::GetBuiltin => 0x1a,
             OpCode::Closure => 0x1b,
+            OpCode::GetFree => 0x1c,
         }
     }
 }
@@ -160,7 +164,11 @@ pub fn make(op: OpCode, operands: &[u32]) -> [u8; 4] {
             instruction[2] = operand[1];
             instruction[3] = operands[1] as u8;
         }
-        OpCode::SetLocal | OpCode::GetLocal | OpCode::Call | OpCode::GetBuiltin => {
+        OpCode::SetLocal
+        | OpCode::GetLocal
+        | OpCode::Call
+        | OpCode::GetBuiltin
+        | OpCode::GetFree => {
             instruction[0] = u8::from(op);
             instruction[1] = operands[0] as u8;
         }
@@ -212,7 +220,11 @@ pub fn disassemble(instructions: &Instructions) -> String {
                     address, op, operand, &word[3]
                 ));
             }
-            OpCode::SetLocal | OpCode::GetLocal | OpCode::Call | OpCode::GetBuiltin => {
+            OpCode::SetLocal
+            | OpCode::GetLocal
+            | OpCode::Call
+            | OpCode::GetBuiltin
+            | OpCode::GetFree => {
                 assembly.push_str(&format!("{:04x} {} {}\n", address, op, &word[1]))
             }
             OpCode::Constant
