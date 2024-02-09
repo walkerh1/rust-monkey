@@ -108,6 +108,15 @@ impl CompiledFunction {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Closure {
-    function: CompiledFunction,
-    free: Vec<Object>,
+    pub function: Rc<CompiledFunction>,
+    pub free: Vec<Rc<Object>>,
+}
+
+impl Closure {
+    pub fn new(function: CompiledFunction) -> Self {
+        Closure {
+            function: Rc::new(function),
+            free: vec![],
+        }
+    }
 }

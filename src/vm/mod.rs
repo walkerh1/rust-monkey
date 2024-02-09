@@ -1,8 +1,9 @@
 use self::frame::Frame;
 use crate::code::{read_u16, OpCode, WORD_SIZE};
 use crate::compiler::ByteCode;
+use crate::main;
 use crate::object::builtins::{Builtin, BuiltinError};
-use crate::object::{CompiledFunction, Hashable, Object};
+use crate::object::{Closure, CompiledFunction, Hashable, Object};
 use std::collections::HashMap;
 use std::ops::Deref;
 use std::rc::Rc;
@@ -30,11 +31,14 @@ pub struct VirtualMachine {
 impl VirtualMachine {
     pub fn new(bytecode: ByteCode) -> Self {
         let ByteCode(instructions, constants) = bytecode;
+        let main_fn = CompiledFunction::new(instructions, 0, 0);
+        let main_closure = Closure::new(main_fn);
+        let main_frame = Frame::new(main_closure, 0);
         VirtualMachine {
             constants,
             stack: Vec::with_capacity(STACK_SIZE),
             globals: vec![Rc::new(Object::Null); GLOBAL_SIZE],
-            frames: vec![Frame::new(CompiledFunction::new(instructions, 0, 0), 0)],
+            frames: vec![main_frame],
             frames_idx: 0,
         }
     }
@@ -129,13 +133,13 @@ impl VirtualMachine {
                 OpCode::Call => {
                     let num_args = word[1] as usize;
                     match &*self.stack[self.stack.len() - 1 - num_args] {
-                        Object::CompiledFunc(func) => {
-                            let num_locals = func.num_locals;
-                            if func.num_params != num_args as u32 {
+                        Object::Closure(closure) => {
+                            let num_locals = closure.function.num_locals;
+                            if closure.function.num_params != num_args as u32 {
                                 return Err(VmError::WrongArguments);
                             }
                             let frame =
-                                Frame::new(func.deref().clone(), self.stack.len() - num_args);
+                                Frame::new(closure.deref().clone(), self.stack.len() - num_args);
                             self.push_frame(frame)?;
                             for _ in 0..(num_locals - (num_args as u32)) {
                                 self.push(&Rc::new(NULL))?;
@@ -194,7 +198,10 @@ impl VirtualMachine {
                         self.push(&Rc::clone(&builtin))?;
                     }
                 }
-                OpCode::Closure => todo!(),
+                OpCode::Closure => {
+                    let const_idx = read_u16(&word[1..=2]) as usize;
+                    self.push_closure(const_idx)?;
+                }
             }
 
             self.frames[self.frames_idx].ip += WORD_SIZE;
@@ -204,6 +211,19 @@ impl VirtualMachine {
             Some(obj) => Ok(obj),
             None => Err(VmError::EmptyStack),
         }
+    }
+
+    fn push_closure(&mut self, idx: usize) -> Result<(), VmError> {
+        match &*self.constants[idx] {
+            Object::CompiledFunc(func) => {
+                let closure = Object::Closure(Rc::new(Closure::new(func.deref().clone())));
+                self.push(&Rc::new(closure))?;
+            }
+            _ => {
+                return Err(VmError::CallingNonFunction);
+            }
+        }
+        Ok(())
     }
 
     fn build_array(&mut self, length: usize) -> Result<Rc<Object>, VmError> {

@@ -1,24 +1,20 @@
 use std::rc::Rc;
 
-use crate::{code::Instructions, object::CompiledFunction};
+use crate::{code::Instructions, object::Closure};
 
 #[derive(Debug, PartialEq)]
 pub struct Frame {
-    pub function: CompiledFunction,
+    pub closure: Closure,
     pub ip: usize,
     pub bp: usize,
 }
 
 impl Frame {
-    pub fn new(function: CompiledFunction, bp: usize) -> Self {
-        Frame {
-            function,
-            ip: 0,
-            bp,
-        }
+    pub fn new(closure: Closure, bp: usize) -> Self {
+        Frame { closure, ip: 0, bp }
     }
 
     pub fn instructions(&self) -> &Rc<Instructions> {
-        &self.function.instructions
+        &self.closure.function.instructions
     }
 }

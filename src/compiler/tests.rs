@@ -696,10 +696,13 @@ fn test_compile_index_expression_three() {
 fn test_compile_function_one() {
     let input = "fn() { return 5 + 10; }";
     let expected = ByteCode(
-        vec![make(OpCode::Constant, &[2_u32]), make(OpCode::Pop, &[])]
-            .into_iter()
-            .flatten()
-            .collect::<Vec<u8>>(),
+        vec![
+            make(OpCode::Closure, &[2_u32, 0_u32]),
+            make(OpCode::Pop, &[]),
+        ]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<u8>>(),
         vec![
             Rc::new(Object::Integer(5)),
             Rc::new(Object::Integer(10)),
@@ -727,10 +730,13 @@ fn test_compile_function_one() {
 fn test_compile_function_two() {
     let input = "fn() { 5 + 10 }";
     let expected = ByteCode(
-        vec![make(OpCode::Constant, &[2_u32]), make(OpCode::Pop, &[])]
-            .into_iter()
-            .flatten()
-            .collect::<Vec<u8>>(),
+        vec![
+            make(OpCode::Closure, &[2_u32, 0_u32]),
+            make(OpCode::Pop, &[]),
+        ]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<u8>>(),
         vec![
             Rc::new(Object::Integer(5)),
             Rc::new(Object::Integer(10)),
@@ -758,10 +764,13 @@ fn test_compile_function_two() {
 fn test_compile_function_three() {
     let input = "fn() { 1; 2 }";
     let expected = ByteCode(
-        vec![make(OpCode::Constant, &[2_u32]), make(OpCode::Pop, &[])]
-            .into_iter()
-            .flatten()
-            .collect::<Vec<u8>>(),
+        vec![
+            make(OpCode::Closure, &[2_u32, 0_u32]),
+            make(OpCode::Pop, &[]),
+        ]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<u8>>(),
         vec![
             Rc::new(Object::Integer(1)),
             Rc::new(Object::Integer(2)),
@@ -789,10 +798,13 @@ fn test_compile_function_three() {
 fn test_compile_function_four() {
     let input = "fn() {}";
     let expected = ByteCode(
-        vec![make(OpCode::Constant, &[0_u32]), make(OpCode::Pop, &[])]
-            .into_iter()
-            .flatten()
-            .collect::<Vec<u8>>(),
+        vec![
+            make(OpCode::Closure, &[0_u32, 0_u32]),
+            make(OpCode::Pop, &[]),
+        ]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<u8>>(),
         vec![Rc::new(Object::CompiledFunc(Rc::new(
             CompiledFunction::new(make(OpCode::Return, &[]).to_vec(), 0, 0),
         )))],
@@ -807,7 +819,7 @@ fn test_compile_function_call_one() {
     let input = "fn() { 24 }()";
     let expected = ByteCode(
         vec![
-            make(OpCode::Constant, &[1_u32]),
+            make(OpCode::Closure, &[1_u32, 0_u32]),
             make(OpCode::Call, &[0_u32]),
             make(OpCode::Pop, &[]),
         ]
@@ -839,7 +851,7 @@ fn test_compile_function_call_two() {
     let input = "let noArg = fn() { 24 }; noArg();";
     let expected = ByteCode(
         vec![
-            make(OpCode::Constant, &[1_u32]),
+            make(OpCode::Closure, &[1_u32, 0_u32]),
             make(OpCode::SetGlobal, &[0_u32]),
             make(OpCode::GetGlobal, &[0_u32]),
             make(OpCode::Call, &[0_u32]),
@@ -878,7 +890,7 @@ fn() { num };
         vec![
             make(OpCode::Constant, &[0_u32]),
             make(OpCode::SetGlobal, &[0_u32]),
-            make(OpCode::Constant, &[1_u32]),
+            make(OpCode::Closure, &[1_u32, 0_u32]),
             make(OpCode::Pop, &[]),
         ]
         .into_iter()
@@ -913,10 +925,13 @@ fn() {
 };
 ";
     let expected = ByteCode(
-        vec![make(OpCode::Constant, &[1_u32]), make(OpCode::Pop, &[])]
-            .into_iter()
-            .flatten()
-            .collect::<Vec<u8>>(),
+        vec![
+            make(OpCode::Closure, &[1_u32, 0_u32]),
+            make(OpCode::Pop, &[]),
+        ]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<u8>>(),
         vec![
             Rc::new(Object::Integer(77)),
             Rc::new(Object::CompiledFunc(Rc::new(CompiledFunction::new(
@@ -949,10 +964,13 @@ fn() {
 }
 ";
     let expected = ByteCode(
-        vec![make(OpCode::Constant, &[2_u32]), make(OpCode::Pop, &[])]
-            .into_iter()
-            .flatten()
-            .collect::<Vec<u8>>(),
+        vec![
+            make(OpCode::Closure, &[2_u32, 0_u32]),
+            make(OpCode::Pop, &[]),
+        ]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<u8>>(),
         vec![
             Rc::new(Object::Integer(77)),
             Rc::new(Object::Integer(55)),
@@ -988,7 +1006,7 @@ arg(24);
 ";
     let expected = ByteCode(
         vec![
-            make(OpCode::Constant, &[0_u32]),
+            make(OpCode::Closure, &[0_u32, 0_u32]),
             make(OpCode::SetGlobal, &[0_u32]),
             make(OpCode::GetGlobal, &[0_u32]),
             make(OpCode::Constant, &[1_u32]),
@@ -1023,7 +1041,7 @@ arg(1, 2, 3);
 ";
     let expected = ByteCode(
         vec![
-            make(OpCode::Constant, &[0_u32]),
+            make(OpCode::Closure, &[0_u32, 0_u32]),
             make(OpCode::SetGlobal, &[0_u32]),
             make(OpCode::GetGlobal, &[0_u32]),
             make(OpCode::Constant, &[1_u32]),
@@ -1062,7 +1080,7 @@ arg(24);
 ";
     let expected = ByteCode(
         vec![
-            make(OpCode::Constant, &[0_u32]),
+            make(OpCode::Closure, &[0_u32, 0_u32]),
             make(OpCode::SetGlobal, &[0_u32]),
             make(OpCode::GetGlobal, &[0_u32]),
             make(OpCode::Constant, &[1_u32]),
@@ -1100,7 +1118,7 @@ arg(1, 2, 3);
 ";
     let expected = ByteCode(
         vec![
-            make(OpCode::Constant, &[0_u32]),
+            make(OpCode::Closure, &[0_u32, 0_u32]),
             make(OpCode::SetGlobal, &[0_u32]),
             make(OpCode::GetGlobal, &[0_u32]),
             make(OpCode::Constant, &[1_u32]),
@@ -1172,10 +1190,13 @@ fn test_builtin_two() {
 fn() { len([]) };
 ";
     let expected = ByteCode(
-        vec![make(OpCode::Constant, &[0_u32]), make(OpCode::Pop, &[])]
-            .into_iter()
-            .flatten()
-            .collect::<Vec<u8>>(),
+        vec![
+            make(OpCode::Closure, &[0_u32, 0_u32]),
+            make(OpCode::Pop, &[]),
+        ]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<u8>>(),
         vec![Rc::new(Object::CompiledFunc(Rc::new(
             CompiledFunction::new(
                 vec![

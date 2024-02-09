@@ -147,7 +147,7 @@ impl Compiler {
                     args.len() as u32,
                 )));
                 let address = self.add_constant(compilted_fn);
-                self.emit(OpCode::Constant, &[address]);
+                self.emit(OpCode::Closure, &[address, 0]);
             }
             Expression::Call(func, args) => {
                 self.compile_expression(func)?;
