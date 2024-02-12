@@ -37,6 +37,7 @@ pub enum OpCode {
     GetBuiltin,
     Closure,
     GetFree,
+    CurrentClosure,
 }
 
 impl Display for OpCode {
@@ -74,6 +75,7 @@ impl Display for OpCode {
                 OpCode::GetBuiltin => "OpGetBuiltin",
                 OpCode::Closure => "OpClosure",
                 OpCode::GetFree => "OpGetFree",
+                OpCode::CurrentClosure => "OpCurrentClosure",
             }
         )
     }
@@ -113,6 +115,7 @@ impl TryFrom<u8> for OpCode {
             0x1a => Ok(OpCode::GetBuiltin),
             0x1b => Ok(OpCode::Closure),
             0x1c => Ok(OpCode::GetFree),
+            0x1d => Ok(OpCode::CurrentClosure),
             _ => Err("Invalid OpCode"),
         }
     }
@@ -150,6 +153,7 @@ impl From<OpCode> for u8 {
             OpCode::GetBuiltin => 0x1a,
             OpCode::Closure => 0x1b,
             OpCode::GetFree => 0x1c,
+            OpCode::CurrentClosure => 0x1d,
         }
     }
 }
@@ -199,7 +203,8 @@ pub fn make(op: OpCode, operands: &[u32]) -> [u8; 4] {
         | OpCode::Null
         | OpCode::Index
         | OpCode::ReturnValue
-        | OpCode::Return => {
+        | OpCode::Return
+        | OpCode::CurrentClosure => {
             instruction[0] = u8::from(op);
         }
     }
@@ -252,7 +257,8 @@ pub fn disassemble(instructions: &Instructions) -> String {
             | OpCode::Null
             | OpCode::Index
             | OpCode::ReturnValue
-            | OpCode::Return => assembly.push_str(&format!("{:04x} {}\n", address, op)),
+            | OpCode::Return
+            | OpCode::CurrentClosure => assembly.push_str(&format!("{:04x} {}\n", address, op)),
         }
         address += 4;
     });

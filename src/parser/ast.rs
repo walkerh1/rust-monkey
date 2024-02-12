@@ -18,7 +18,7 @@ pub enum Expression {
     Infix(Box<Expression>, Infix, Box<Expression>),
     Boolean(bool),
     If(Box<Expression>, Box<Statement>, Option<Box<Statement>>),
-    Function(Vec<Expression>, Box<Statement>),
+    Function(Vec<Expression>, Box<Statement>, String),
     Call(Box<Expression>, Vec<Expression>),
     String(String),
     Array(Vec<Expression>),

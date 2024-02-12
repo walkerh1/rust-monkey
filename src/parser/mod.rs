@@ -111,8 +111,12 @@ impl<'a> Parser<'a> {
 
     fn parse_let(&mut self) -> Result<Statement, ParsingError> {
         // after 'let' next token should be an identifier
+        let name: String;
         let identifier = Expression::Identifier(match self.next_token_or_end()? {
-            Token::Identifier(id) => id,
+            Token::Identifier(id) => {
+                name = id.clone();
+                id
+            }
             token => return Err(ParsingError::UnexpectedToken(token)),
         });
 
@@ -127,7 +131,13 @@ impl<'a> Parser<'a> {
         let token = self.next_token_or_end()?;
 
         let expression = match self.parse_expression(&token, Precedence::Lowest) {
-            Ok(exp) => exp,
+            Ok(exp) => {
+                if let Expression::Function(args, block, _) = exp {
+                    Expression::Function(args, block, name)
+                } else {
+                    exp
+                }
+            }
             Err(e) => return Err(e),
         };
 
@@ -440,7 +450,7 @@ impl<'a> Parser<'a> {
         // expect block statement after parameter list
         let body = Box::new(self.parse_block_statement()?);
 
-        Ok(Expression::Function(parameters, body))
+        Ok(Expression::Function(parameters, body, String::new()))
     }
 
     fn parse_function_parameters(&mut self) -> Result<Vec<Expression>, ParsingError> {

@@ -107,7 +107,9 @@ fn eval_expression(
         Expression::If(condition, if_block, else_block) => {
             eval_if_expression(condition, if_block, else_block, env)
         }
-        Expression::Function(parameters, body) => eval_function_expression(parameters, body, env),
+        Expression::Function(parameters, body, _) => {
+            eval_function_expression(parameters, body, env)
+        }
         Expression::Call(func, args) => eval_function_call_expression(func, args, env),
         Expression::String(string) => Ok(Rc::new(Object::String(string.clone()))),
         Expression::Array(elements) => eval_array_literal(elements, env),

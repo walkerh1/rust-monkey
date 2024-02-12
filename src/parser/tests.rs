@@ -659,6 +659,7 @@ fn test_function_literal() {
                 Box::new(Expression::Identifier(String::from("y"))),
             ),
         )])),
+        String::new(),
     ))]);
     let program = Parser::parse_program(input).ok().unwrap();
     assert_eq!(program, expected);
@@ -672,6 +673,7 @@ fn test_function_literal_no_parameters() {
         Box::new(Statement::BlockStatement(vec![Statement::Expression(
             Expression::Integer(1),
         )])),
+        String::new(),
     ))]);
     let program = Parser::parse_program(input).ok().unwrap();
     assert_eq!(program, expected);
@@ -766,6 +768,7 @@ fn test_call_expression_inlined_function() {
                     Box::new(Expression::Identifier(String::from("y"))),
                 ),
             )])),
+            String::new(),
         )),
         vec![Expression::Integer(2), Expression::Integer(3)],
     ))]);

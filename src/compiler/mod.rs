@@ -70,9 +70,9 @@ impl Compiler {
     }
 
     fn compile_let(&mut self, id: &Expression, val: &Expression) -> Result<(), CompilerError> {
-        self.compile_expression(val)?;
         if let Expression::Identifier(id) = id {
             let symbol = self.symbol_table.define(id.to_string());
+            self.compile_expression(val)?;
             match symbol.scope {
                 SymbolScope::Global => self.emit(OpCode::SetGlobal, &[symbol.index]),
                 SymbolScope::Local => self.emit(OpCode::SetLocal, &[symbol.index]),
@@ -112,8 +112,9 @@ impl Compiler {
             Expression::If(condition, consequence, alternative) => {
                 self.compile_if_expression(condition, consequence, alternative)?
             }
-            Expression::Function(args, body) => {
+            Expression::Function(args, body, name) => {
                 self.enter_scope();
+                self.symbol_table.define_function_name(name.clone());
                 for arg in args {
                     match arg {
                         Expression::Identifier(id) => self.symbol_table.define(id.clone()),
@@ -361,6 +362,9 @@ impl Compiler {
             }
             SymbolScope::Free => {
                 self.emit(OpCode::GetFree, &[binding.index]);
+            }
+            SymbolScope::Function => {
+                self.emit(OpCode::CurrentClosure, &[]);
             }
         }
     }

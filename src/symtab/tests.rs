@@ -208,3 +208,22 @@ fn test_resolve_unresolvable_free() {
     let fl2 = second_local.resolve("f".to_string()).unwrap();
     assert_eq!(fl2, Rc::new(Symbol::new("f", SymbolScope::Local, 1)));
 }
+
+#[test]
+fn test_define_and_resolve_function_name() {
+    let mut global = SymbolTable::new();
+    global.define_function_name("a".to_string());
+
+    let a = global.resolve("a".to_string()).unwrap();
+    assert_eq!(a, Rc::new(Symbol::new("a", SymbolScope::Function, 0)));
+}
+
+#[test]
+fn test_shadowing_function_name() {
+    let mut global = SymbolTable::new();
+    global.define_function_name("a".to_string());
+    global.define("a".to_string());
+
+    let a = global.resolve("a".to_string()).unwrap();
+    assert_eq!(a, Rc::new(Symbol::new("a", SymbolScope::Global, 0)));
+}

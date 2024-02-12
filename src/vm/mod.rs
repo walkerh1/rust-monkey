@@ -207,6 +207,10 @@ impl VirtualMachine {
                     let free = self.frames[self.frames_idx].closure.free[free_idx].clone();
                     self.push(&free)?;
                 }
+                OpCode::CurrentClosure => {
+                    let current_closure = self.frames[self.frames_idx].closure.clone();
+                    self.push(&Rc::new(Object::Closure(Rc::new(current_closure))))?;
+                }
             }
 
             self.frames[self.frames_idx].ip += WORD_SIZE;

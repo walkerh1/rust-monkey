@@ -1077,3 +1077,63 @@ closure();
     assert_eq!(error, None);
     assert_eq!(result, Some(expected));
 }
+
+#[test]
+fn test_recursive_closure_one() {
+    let input = "
+let countdown = fn(x) {
+    if (x == 0) {
+        return 0;
+    } else {
+        countdown(x-1);
+    }
+};
+countdown(1);
+";
+    let expected = Rc::new(Object::Integer(0));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_recursive_closure_two() {
+    let input = "
+let countdown = fn(x) {
+    if (x == 0) {
+        return 0;
+    } else {
+        countdown(x-1);
+    }
+};
+let wrapper = fn() {
+    countdown(1);
+};
+wrapper();
+";
+    let expected = Rc::new(Object::Integer(0));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_recursive_closure_three() {
+    let input = "
+let wrapper = fn() {
+    let countdown = fn(x) {
+        if (x == 0) {
+            return 0;
+        } else {
+            countdown(x-1);
+        }
+    };
+    countdown(1);
+};
+wrapper();
+";
+    let expected = Rc::new(Object::Integer(0));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
