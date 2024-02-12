@@ -2,7 +2,7 @@
 *Rust* interpreter and compiler for the *Monkey* programming language, based on the books by Thorsten Ball.
 
 ## Additional language features
-In addition to the langauge features of vanilla *Monkey*, I have added the following:
+In addition to all the langauge features included in vanilla *Monkey*, this implementation adds:
 * logical operators `&&` and `||`
 * `while` loop
 * assignment (e.g. `x = x + 1;`)
