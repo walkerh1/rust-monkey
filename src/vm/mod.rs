@@ -31,7 +31,7 @@ impl VirtualMachine {
     pub fn new(bytecode: ByteCode) -> Self {
         let ByteCode(instructions, constants) = bytecode;
         let main_fn = CompiledFunction::new(instructions, 0, 0);
-        let main_closure = Closure::new(main_fn);
+        let main_closure = Closure::new(main_fn, vec![]);
         let main_frame = Frame::new(main_closure, 0);
         VirtualMachine {
             constants,
@@ -199,9 +199,14 @@ impl VirtualMachine {
                 }
                 OpCode::Closure => {
                     let const_idx = read_u16(&word[1..=2]) as usize;
-                    self.push_closure(const_idx)?;
+                    let num_free = word[3] as usize;
+                    self.push_closure(const_idx, num_free)?;
                 }
-                OpCode::GetFree => todo!(),
+                OpCode::GetFree => {
+                    let free_idx = word[1] as usize;
+                    let free = self.frames[self.frames_idx].closure.free[free_idx].clone();
+                    self.push(&free)?;
+                }
             }
 
             self.frames[self.frames_idx].ip += WORD_SIZE;
@@ -213,10 +218,17 @@ impl VirtualMachine {
         }
     }
 
-    fn push_closure(&mut self, idx: usize) -> Result<(), VmError> {
+    fn push_closure(&mut self, idx: usize, num_free: usize) -> Result<(), VmError> {
         match &*self.constants[idx] {
             Object::CompiledFunc(func) => {
-                let closure = Object::Closure(Rc::new(Closure::new(func.deref().clone())));
+                let mut free = Vec::with_capacity(num_free);
+                for i in 0..num_free {
+                    free.push(self.stack[self.stack.len() - num_free + i].clone());
+                }
+                let closure = Object::Closure(Rc::new(Closure::new(func.deref().clone(), free)));
+                for _ in 0..num_free {
+                    self.pop()?;
+                }
                 self.push(&Rc::new(closure))?;
             }
             _ => {

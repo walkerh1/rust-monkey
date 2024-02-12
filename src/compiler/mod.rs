@@ -73,7 +73,6 @@ impl Compiler {
         self.compile_expression(val)?;
         if let Expression::Identifier(id) = id {
             let symbol = self.symbol_table.define(id.to_string());
-            println!("{:?}", symbol);
             match symbol.scope {
                 SymbolScope::Global => self.emit(OpCode::SetGlobal, &[symbol.index]),
                 SymbolScope::Local => self.emit(OpCode::SetLocal, &[symbol.index]),

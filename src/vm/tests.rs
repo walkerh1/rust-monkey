@@ -994,3 +994,86 @@ fn test_builtin_eighteen() {
     assert_eq!(error, Some(expected_error));
     assert_eq!(result, None);
 }
+
+#[test]
+fn test_closure_one() {
+    let input = "
+let newClosure = fn(a) {
+    fn() { a; };
+};
+let closure = newClosure(99);
+closure();
+";
+    let expected = Rc::new(Object::Integer(99));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_closure_two() {
+    let input = "
+let newAdder = fn(a, b) {
+    fn(c) { a + b + c; };
+};
+let adder = newAdder(1, 2);
+adder(8);
+";
+    let expected = Rc::new(Object::Integer(11));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_closure_three() {
+    let input = "
+let newAdder = fn(a, b) {
+    let c = a + b;
+    fn(d) { c + d; };
+};
+let adder = newAdder(1, 2);
+adder(8);
+";
+    let expected = Rc::new(Object::Integer(11));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_closure_four() {
+    let input = "
+let newAdder = fn(a, b) {
+    let c = a + b;
+    fn(d) {
+        let e = d + c;
+        fn(f) { e + f; };
+    };
+};
+let adderInner = newAdder(1, 2);
+let adder = adderInner(3);
+adder(8);
+";
+    let expected = Rc::new(Object::Integer(14));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_closure_five() {
+    let input = "
+let newClosure = fn(a, b) {
+    let one = fn() { a; };
+    let two = fn() { b; };
+    fn() { one() + two(); };
+};
+let closure = newClosure(9, 90);
+closure();
+";
+    let expected = Rc::new(Object::Integer(99));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}

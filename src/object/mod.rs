@@ -113,10 +113,10 @@ pub struct Closure {
 }
 
 impl Closure {
-    pub fn new(function: CompiledFunction) -> Self {
+    pub fn new(function: CompiledFunction, free: Vec<Rc<Object>>) -> Self {
         Closure {
             function: Rc::new(function),
-            free: vec![],
+            free,
         }
     }
 }
