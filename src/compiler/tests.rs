@@ -1217,3 +1217,205 @@ fn() { len([]) };
     assert_eq!(error, None);
     assert_eq!(byte_code, Some(expected));
 }
+
+#[test]
+fn test_closure_one() {
+    let input = "
+fn(a) {
+    fn(b) {
+        a + b;
+    };
+};
+";
+    let expected = ByteCode(
+        vec![
+            make(OpCode::Closure, &[1_u32, 0_u32]),
+            make(OpCode::Pop, &[]),
+        ]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<u8>>(),
+        vec![
+            Rc::new(Object::CompiledFunc(Rc::new(CompiledFunction::new(
+                vec![
+                    make(OpCode::GetFree, &[0_u32]),
+                    make(OpCode::GetLocal, &[0_u32]),
+                    make(OpCode::Add, &[]),
+                    make(OpCode::ReturnValue, &[]),
+                ]
+                .into_iter()
+                .flatten()
+                .collect::<Vec<u8>>(),
+                1,
+                1,
+            )))),
+            Rc::new(Object::CompiledFunc(Rc::new(CompiledFunction::new(
+                vec![
+                    make(OpCode::GetLocal, &[0_u32]),
+                    make(OpCode::Closure, &[0_u32, 1_u32]),
+                    make(OpCode::ReturnValue, &[]),
+                ]
+                .into_iter()
+                .flatten()
+                .collect::<Vec<u8>>(),
+                1,
+                1,
+            )))),
+        ],
+    );
+    let (byte_code, error) = parse_and_compile(input);
+    assert_eq!(error, None);
+    assert_eq!(byte_code, Some(expected));
+}
+
+#[test]
+fn test_closure_two() {
+    let input = "
+fn(a) {
+    fn(b) {
+        fn(c) {
+            a + b + c;
+        };
+    };
+};
+";
+    let expected = ByteCode(
+        vec![
+            make(OpCode::Closure, &[2_u32, 0_u32]),
+            make(OpCode::Pop, &[]),
+        ]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<u8>>(),
+        vec![
+            Rc::new(Object::CompiledFunc(Rc::new(CompiledFunction::new(
+                vec![
+                    make(OpCode::GetFree, &[0_u32]),
+                    make(OpCode::GetFree, &[1_u32]),
+                    make(OpCode::Add, &[]),
+                    make(OpCode::GetLocal, &[0_u32]),
+                    make(OpCode::Add, &[]),
+                    make(OpCode::ReturnValue, &[]),
+                ]
+                .into_iter()
+                .flatten()
+                .collect::<Vec<u8>>(),
+                1,
+                1,
+            )))),
+            Rc::new(Object::CompiledFunc(Rc::new(CompiledFunction::new(
+                vec![
+                    make(OpCode::GetFree, &[0_u32]),
+                    make(OpCode::GetLocal, &[0_u32]),
+                    make(OpCode::Closure, &[0_u32, 2_u32]),
+                    make(OpCode::ReturnValue, &[]),
+                ]
+                .into_iter()
+                .flatten()
+                .collect::<Vec<u8>>(),
+                1,
+                1,
+            )))),
+            Rc::new(Object::CompiledFunc(Rc::new(CompiledFunction::new(
+                vec![
+                    make(OpCode::GetLocal, &[0_u32]),
+                    make(OpCode::Closure, &[1_u32, 1_u32]),
+                    make(OpCode::ReturnValue, &[]),
+                ]
+                .into_iter()
+                .flatten()
+                .collect::<Vec<u8>>(),
+                1,
+                1,
+            )))),
+        ],
+    );
+    let (byte_code, error) = parse_and_compile(input);
+    assert_eq!(error, None);
+    assert_eq!(byte_code, Some(expected));
+}
+
+#[test]
+fn test_closure_three() {
+    let input = "
+let global = 55;
+fn() {
+    let a = 66;
+    fn() {
+        let b = 77;
+        fn() {
+            let c = 88;
+            global + a + b + c;
+        };
+    };
+};
+";
+    let expected = ByteCode(
+        vec![
+            make(OpCode::Constant, &[0_u32]),
+            make(OpCode::SetGlobal, &[0_u32]),
+            make(OpCode::Closure, &[6_u32, 0_u32]),
+            make(OpCode::Pop, &[]),
+        ]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<u8>>(),
+        vec![
+            Rc::new(Object::Integer(55)),
+            Rc::new(Object::Integer(66)),
+            Rc::new(Object::Integer(77)),
+            Rc::new(Object::Integer(88)),
+            Rc::new(Object::CompiledFunc(Rc::new(CompiledFunction::new(
+                vec![
+                    make(OpCode::Constant, &[3_u32]),
+                    make(OpCode::SetLocal, &[0_u32]),
+                    make(OpCode::GetGlobal, &[0_u32]),
+                    make(OpCode::GetFree, &[0_u32]),
+                    make(OpCode::Add, &[]),
+                    make(OpCode::GetFree, &[1_u32]),
+                    make(OpCode::Add, &[]),
+                    make(OpCode::GetLocal, &[0_u32]),
+                    make(OpCode::Add, &[]),
+                    make(OpCode::ReturnValue, &[]),
+                ]
+                .into_iter()
+                .flatten()
+                .collect::<Vec<u8>>(),
+                1,
+                0,
+            )))),
+            Rc::new(Object::CompiledFunc(Rc::new(CompiledFunction::new(
+                vec![
+                    make(OpCode::Constant, &[2_u32]),
+                    make(OpCode::SetLocal, &[0_u32]),
+                    make(OpCode::GetFree, &[0_u32]),
+                    make(OpCode::GetLocal, &[0_u32]),
+                    make(OpCode::Closure, &[4_u32, 2_u32]),
+                    make(OpCode::ReturnValue, &[]),
+                ]
+                .into_iter()
+                .flatten()
+                .collect::<Vec<u8>>(),
+                1,
+                0,
+            )))),
+            Rc::new(Object::CompiledFunc(Rc::new(CompiledFunction::new(
+                vec![
+                    make(OpCode::Constant, &[1_u32]),
+                    make(OpCode::SetLocal, &[0_u32]),
+                    make(OpCode::GetLocal, &[0_u32]),
+                    make(OpCode::Closure, &[5_u32, 1_u32]),
+                    make(OpCode::ReturnValue, &[]),
+                ]
+                .into_iter()
+                .flatten()
+                .collect::<Vec<u8>>(),
+                1,
+                0,
+            )))),
+        ],
+    );
+    let (byte_code, error) = parse_and_compile(input);
+    assert_eq!(error, None);
+    assert_eq!(byte_code, Some(expected));
+}

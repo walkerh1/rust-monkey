@@ -1,7 +1,6 @@
 use self::frame::Frame;
 use crate::code::{read_u16, OpCode, WORD_SIZE};
 use crate::compiler::ByteCode;
-use crate::main;
 use crate::object::builtins::{Builtin, BuiltinError};
 use crate::object::{Closure, CompiledFunction, Hashable, Object};
 use std::collections::HashMap;

@@ -1,8 +1,7 @@
 use crate::code::{make, Instructions, OpCode, WORD_SIZE};
-use crate::object::builtins::NUM_BUILTINS;
 use crate::object::{CompiledFunction, Object};
 use crate::parser::ast::{Expression, Infix, Prefix, Program, Statement};
-use crate::symtab::{SymbolScope, SymbolTable};
+use crate::symtab::{Symbol, SymbolScope, SymbolTable};
 use std::rc::Rc;
 
 mod tests;
@@ -74,10 +73,11 @@ impl Compiler {
         self.compile_expression(val)?;
         if let Expression::Identifier(id) = id {
             let symbol = self.symbol_table.define(id.to_string());
+            println!("{:?}", symbol);
             match symbol.scope {
                 SymbolScope::Global => self.emit(OpCode::SetGlobal, &[symbol.index]),
                 SymbolScope::Local => self.emit(OpCode::SetLocal, &[symbol.index]),
-                SymbolScope::Builtin => todo!(),
+                _ => todo!(),
             };
         }
         Ok(())
@@ -93,17 +93,7 @@ impl Compiler {
     fn compile_expression(&mut self, expression: &Expression) -> Result<(), CompilerError> {
         match expression {
             Expression::Identifier(id) => match self.symbol_table.resolve(id.to_string()) {
-                Some(binding) => match binding.scope {
-                    SymbolScope::Global => {
-                        self.emit(OpCode::GetGlobal, &[binding.index]);
-                    }
-                    SymbolScope::Local => {
-                        self.emit(OpCode::GetLocal, &[binding.index]);
-                    }
-                    SymbolScope::Builtin => {
-                        self.emit(OpCode::GetBuiltin, &[binding.index]);
-                    }
-                },
+                Some(binding) => self.load_symbol(binding),
                 None => {
                     return Err(CompilerError::UndefinedVariable);
                 }
@@ -139,15 +129,19 @@ impl Compiler {
                 if !self.last_instruction_is(OpCode::ReturnValue) {
                     self.emit(OpCode::Return, &[]);
                 }
+                let free_symbols = self.symbol_table.free_symbols.clone();
                 let num_locals = self.symbol_table.num_definitions;
                 let instructions = self.leave_scope();
+                free_symbols
+                    .iter()
+                    .for_each(|binding| self.load_symbol(Rc::clone(binding)));
                 let compilted_fn = Object::CompiledFunc(Rc::new(CompiledFunction::new(
                     instructions,
                     num_locals,
                     args.len() as u32,
                 )));
                 let address = self.add_constant(compilted_fn);
-                self.emit(OpCode::Closure, &[address, 0]);
+                self.emit(OpCode::Closure, &[address, free_symbols.len() as u32]);
             }
             Expression::Call(func, args) => {
                 self.compile_expression(func)?;
@@ -353,6 +347,23 @@ impl Compiler {
         self.symbol_table = self.symbol_table.outer.as_ref().unwrap().as_ref().clone();
         self.scope_idx -= 1;
         self.scopes.pop().unwrap()
+    }
+
+    fn load_symbol(&mut self, binding: Rc<Symbol>) {
+        match binding.scope {
+            SymbolScope::Global => {
+                self.emit(OpCode::GetGlobal, &[binding.index]);
+            }
+            SymbolScope::Local => {
+                self.emit(OpCode::GetLocal, &[binding.index]);
+            }
+            SymbolScope::Builtin => {
+                self.emit(OpCode::GetBuiltin, &[binding.index]);
+            }
+            SymbolScope::Free => {
+                self.emit(OpCode::GetFree, &[binding.index]);
+            }
+        }
     }
 }
 

@@ -7,6 +7,7 @@ pub enum SymbolScope {
     Global,
     Local,
     Builtin,
+    Free,
 }
 
 #[derive(Debug, PartialEq)]
@@ -31,6 +32,7 @@ pub struct SymbolTable {
     pub outer: Option<Box<SymbolTable>>,
     store: HashMap<String, Rc<Symbol>>,
     pub num_definitions: u32,
+    pub free_symbols: Vec<Rc<Symbol>>,
 }
 
 impl SymbolTable {
@@ -39,6 +41,7 @@ impl SymbolTable {
             outer: None,
             store: HashMap::new(),
             num_definitions: 0,
+            free_symbols: vec![],
         }
     }
 
@@ -80,9 +83,27 @@ impl SymbolTable {
             return Some(Rc::clone(&sym));
         } else if let Some(outer) = &mut self.outer {
             if let Some(object) = outer.resolve(name) {
-                return Some(object);
+                match object.scope {
+                    SymbolScope::Global | SymbolScope::Builtin => {
+                        return Some(object);
+                    }
+                    _ => {
+                        return Some(self.define_free(object));
+                    }
+                }
             }
         }
         None
+    }
+
+    fn define_free(&mut self, original: Rc<Symbol>) -> Rc<Symbol> {
+        self.free_symbols.push(original.clone());
+        let sym = Rc::new(Symbol::new(
+            &original.name,
+            SymbolScope::Free,
+            (self.free_symbols.len() - 1) as u32,
+        ));
+        self.store.insert(original.name.clone(), Rc::clone(&sym));
+        Rc::clone(&sym)
     }
 }
