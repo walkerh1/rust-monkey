@@ -1137,3 +1137,47 @@ wrapper();
     assert_eq!(error, None);
     assert_eq!(result, Some(expected));
 }
+
+#[test]
+fn test_logical_operator_one() {
+    let input = "
+true && false
+";
+    let expected = Rc::new(Object::Boolean(false));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_logical_operator_two() {
+    let input = "
+true && (1 > 0)
+";
+    let expected = Rc::new(Object::Boolean(true));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_logical_operator_three() {
+    let input = "
+false || (1 > 0)
+";
+    let expected = Rc::new(Object::Boolean(true));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
+fn test_logical_operator_four() {
+    let input = "
+false || (1 < 0)
+";
+    let expected = Rc::new(Object::Boolean(false));
+    let (result, error) = compile_and_run(input);
+    assert_eq!(error, None);
+    assert_eq!(result, Some(expected));
+}

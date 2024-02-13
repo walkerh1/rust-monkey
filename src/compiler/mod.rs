@@ -277,8 +277,12 @@ impl Compiler {
             Infix::NotEqual => {
                 self.emit(OpCode::NotEqual, &[]);
             }
-            Infix::And => todo!(),
-            Infix::Or => todo!(),
+            Infix::And => {
+                self.emit(OpCode::And, &[]);
+            }
+            Infix::Or => {
+                self.emit(OpCode::Or, &[]);
+            }
         }
         Ok(())
     }

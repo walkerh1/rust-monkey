@@ -74,7 +74,9 @@ impl VirtualMachine {
                 | OpCode::Divide
                 | OpCode::Equal
                 | OpCode::NotEqual
-                | OpCode::GreaterThan => {
+                | OpCode::GreaterThan
+                | OpCode::And
+                | OpCode::Or => {
                     self.execute_binary_expression(op)?;
                 }
                 OpCode::True => {
@@ -346,6 +348,14 @@ impl VirtualMachine {
             }
             (Object::Boolean(left_val), OpCode::GreaterThan, Object::Boolean(right_val)) => {
                 let result = if left_val > right_val { TRUE } else { FALSE };
+                self.push(&Rc::new(result))?;
+            }
+            (Object::Boolean(left_val), OpCode::And, Object::Boolean(right_val)) => {
+                let result = if *left_val && *right_val { TRUE } else { FALSE };
+                self.push(&Rc::new(result))?;
+            }
+            (Object::Boolean(left_val), OpCode::Or, Object::Boolean(right_val)) => {
+                let result = if *left_val || *right_val { TRUE } else { FALSE };
                 self.push(&Rc::new(result))?;
             }
             (Object::String(left_val), OpCode::Add, Object::String(right_val)) => {

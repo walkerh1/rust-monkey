@@ -280,6 +280,46 @@ fn test_compile_boolean_expression_five() {
 }
 
 #[test]
+fn test_compile_boolean_expression_six() {
+    let input = "true && false;";
+    let expected = ByteCode(
+        vec![
+            make(OpCode::True, &[]),
+            make(OpCode::False, &[]),
+            make(OpCode::And, &[]),
+            make(OpCode::Pop, &[]),
+        ]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<u8>>(),
+        vec![],
+    );
+    let (byte_code, error) = parse_and_compile(input);
+    assert_eq!(error, None);
+    assert_eq!(byte_code, Some(expected));
+}
+
+#[test]
+fn test_compile_boolean_expression_seven() {
+    let input = "true || false;";
+    let expected = ByteCode(
+        vec![
+            make(OpCode::True, &[]),
+            make(OpCode::False, &[]),
+            make(OpCode::Or, &[]),
+            make(OpCode::Pop, &[]),
+        ]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<u8>>(),
+        vec![],
+    );
+    let (byte_code, error) = parse_and_compile(input);
+    assert_eq!(error, None);
+    assert_eq!(byte_code, Some(expected));
+}
+
+#[test]
 fn test_compile_minus_expressions() {
     let input = "-1";
     let expected = ByteCode(
